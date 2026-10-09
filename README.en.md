@@ -286,6 +286,21 @@ These are usually the same model (the default is usually what the session is
 using), but **not guaranteed**: if you switch models inside a session, the
 settings page's draft still uses the default.
 
+> What is followed is the **provider / model**; the **reasoning depth is never
+> specified explicitly**. The rewrite sends no `reasoningEffort` field and lets
+> the harness decide per route.
+>
+> That is not laziness, it is the only portable spelling. The harness validates
+> the field *before* handing the request to any provider: when a route's model
+> declares **no** reasoning metadata, **any present value throws** — including
+> the empty string (the host's own "Provider default" sentinel) and including
+> `off`. `hy4-preview` on `workbuddy-xdpool` is exactly such a route, and
+> pinning `low` there broke every rewrite outright.
+>
+> The cost: on a reasoning model the rewrite may still spend thinking time
+> before emitting text. The panel's elapsed seconds and the 120s deadline are
+> the current answer to that.
+
 So you do not have to guess, the settings page **shows the model it will use**
 (`provider / model`) and says that it is the harness default; after generating it
 shows the model it **actually** used. If neither can be resolved (no message sent

@@ -6,6 +6,26 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+
+- **The rewrite stops naming a reasoning effort, so it works again on routes
+  that declare none.** A earlier attempt to speed slow rewrites up pinned
+  `reasoningEffort: 'low'`; on `workbuddy-xdpool` / `hy4-preview` every rewrite
+  then failed outright with
+  `does not support reasoning effort "low"`.
+
+  The harness validates the field before it reaches any provider: when a
+  route's model declares **no** reasoning metadata, **any present value**
+  throws — including `''`, which is the host's own "Provider default" sentinel
+  in the ACP session-config layer, and including `'off'`. Absence is therefore
+  the only portable way to ask for the route's default, and the call now leaves
+  the field out.
+
+  The latency this was meant to fix is **not** fixed by it. On a reasoning
+  model the rewrite may still spend thinking time before it emits anything; the
+  120s deadline and the elapsed-seconds readout from 0.3.1 remain the honest
+  answer there.
+
 ## [0.3.1] - 2026-10-09
 
 ### Fixed
