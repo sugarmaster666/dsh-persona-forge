@@ -6,7 +6,12 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
-Nothing yet.
+### Changed
+
+- The Chinese README is now the primary `README.md`, and the English one is
+  `README.en.md`. GitHub, npm and the repository landing page therefore open in
+  Chinese, with a language switch at the top of each file. The npm package
+  description is Chinese for the same reason.
 
 ## [0.2.1] - 2026-10-09
 

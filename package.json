@@ -1,7 +1,7 @@
 {
   "name": "dsh-persona-forge",
   "version": "0.2.1",
-  "description": "Persona-style prompt rewriter for DeepSeek Harness: pick a character card in the composer, rewrite the draft into that character's voice through the harness LLM (following the session's own model), then send directly or review first. The original draft is always preserved.",
+  "description": "给 DeepSeek Harness 用的角色扮演提示词改写插件：在输入框选一张角色卡，草稿就会由 harness 的模型改写成该角色的口吻（跟随当前会话正在使用的模型），然后直接发出或先人工审查。原草稿始终保留。",
   "type": "module",
   "license": "MIT",
   "engines": {
@@ -37,7 +37,7 @@
     "cards",
     "cordis.patch.yml",
     "README.md",
-    "README.zh-CN.md",
+    "README.en.md",
     "CHANGELOG.md",
     "LICENSE"
   ],
