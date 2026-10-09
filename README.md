@@ -124,22 +124,57 @@ you want them gone.
 
 ## Use
 
-1. Write your request in the composer.
-2. Click 🎭 in the composer tool row and pick a character. The menu opens with
-   **Rewrite with this persona** — click it to rewrite. (The action stays
-   disabled until a character is selected.)
-3. Set **intensity** (light / medium / zealot) and **send mode**:
-   - **Review first** — the rewrite fills the composer, with a before/after
-     panel. You press Send, Fill only, Restore original, or Rewrite again.
-   - **Send directly** — the rewrite is sent as your message immediately. The
-     panel stays open afterwards showing exactly what went out, because a sent
-     message cannot be recalled.
-4. **No persona** in the same menu turns rewriting off: the composer sends
-   exactly what you typed. This is the state the control starts in, and your
-   choice is remembered per session.
+1. Click 🎭 in the composer tool row and pick a character. **No persona** in the
+   same menu turns rewriting off — that is the state the control starts in, and
+   your choice is remembered per session.
+2. Set **intensity** and **send mode**:
+   - Intensity is a four-rung ladder: **Light · Medium · Strong · Zealot**
+     (轻 · 中 · 重 · 狂热). Light adds a touch of flavour; Medium is clear but not
+     dominant; Strong gives the voice real weight while keeping the request the
+     first thing the reader sees; Zealot is ritual throughout. A card carries
+     its own default, and this choice overrides it for your session.
+   - **Review first** — the rewrite appears in the comparison panel below the
+     composer; you read it and then press Send there. Your draft is untouched
+     until you confirm.
+   - **Send directly** — the rewrite is sent as your message immediately, and
+     the panel stays open afterwards showing exactly what went out, because a
+     sent message cannot be recalled.
+3. With a character selected, the composer's normal **Send** button — or
+   **Enter** — *is* the rewrite trigger.
+
+The rewrite runs **once per draft**: after a rewrite lands, sending goes through
+as-is instead of rewriting the output again. Editing the draft re-arms it.
 
 Your draft is preserved: *Restore original* puts it back, and *Fill only* puts
 the rewrite in the composer without sending.
+
+### How send interception works, and its one risk
+
+There is no plugin hook for the composer's send action. The shipped button calls
+the shell's submit method directly, and **Enter does not go through the button at
+all** — the editor's keymap calls submit itself. The plugin therefore intercepts
+both paths:
+
+- the **click** on the composer card, identifying the send button by its
+  **accessible name** from the shell's own `conversation` locale namespace
+  ("Send message" / "Queue message" / "Steer message");
+- the **Enter keydown** inside the composer text field.
+
+That is a public, translated string rather than a hashed CSS class, but it is
+still shell markup. Every guard fails toward *letting the native send happen*:
+if the locale service is missing, the composer card cannot be found, the button
+label does not match, the persona is off, the draft is empty, or the draft was
+already rewritten, the plugin does nothing and the message is sent normally.
+Enter interception ignores Shift+Enter (newline), IME composition, and every
+modifier chord the shell itself ignores.
+
+**Turning the plugin off removes the interception entirely** — the slot
+component unmounts, its listeners are removed with it, and the composer behaves
+exactly as if the plugin were never installed.
+
+The worst realistic failure is that interception silently stops working and
+sending behaves as if the plugin were not installed — not a lost or altered
+message.
 
 ### The preservation check
 
@@ -171,6 +206,14 @@ Use the 🎭 menu's *Open card directory*, or the settings page, to get there.
 You can also create and edit cards entirely in **Settings → Persona**; that
 writes the same files.
 
+On first run the bundled cards are **copied into your card directory** so the
+folder is a usable starting point. A copy shadows the bundled card of the same
+id, so the store tracks what it wrote: a copy you never touched is refreshed
+when a plugin update improves it, while a copy you edited is never written over.
+If a card was frozen at an older version — including copies seeded by releases
+that predate that tracking — the settings page offers **Restore bundled** to
+replace it with the current bundled version in one click.
+
 ### Card format
 
 ```yaml
@@ -181,7 +224,7 @@ description: One line shown in the picker.
 
 mode: llm                  # llm = model rewrite (recommended) | template
 fidelity: style            # style = voice only | strategy = may add constraints
-intensity: medium          # light | medium | zealot (the card's default)
+intensity: medium          # light | medium | strong | zealot (the card's default)
 
 # What the character IS. This is an instruction to the rewriting model, not
 # finished copy: the output is written fresh for each of your messages.

@@ -10,6 +10,19 @@
 import { readFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 import { dirname, join } from 'node:path'
+import { tmpdir } from 'node:os'
+import { mkdtemp, rm } from 'node:fs/promises'
+
+// Isolate the harness home BEFORE importing anything that resolves it.
+//
+// The card store merges the bundled cards with the user's own directory under
+// $DSH_HOME, and a user card SHADOWS a bundled one of the same id. Without this
+// the suite would read the developer's real ~/.dsh/persona-cards and its
+// results would depend on whatever they happen to have saved — a stale seeded
+// card silently replacing an improved bundled one, for instance.
+const ISOLATED_HOME = await mkdtemp(join(tmpdir(), 'persona-forge-unit-'))
+process.env.DSH_HOME = ISOLATED_HOME
+
 import { normalizeCard, createCardStore } from '../lib/store.js'
 import { parseYaml, dumpYaml, YamlError } from '../lib/yaml.js'
 import {
@@ -24,6 +37,9 @@ import { normalizeOutput } from '../lib/rewrite.js'
 
 const here = dirname(fileURLToPath(import.meta.url))
 const root = join(here, '..')
+
+/** The intensity ladder, weakest to strongest. Mirrors the client's list. */
+const INTENSITY_LEVELS = ['light', 'medium', 'strong', 'zealot']
 
 let failures = 0
 let checks = 0
@@ -170,13 +186,26 @@ for (const card of catalog.cards) {
   // The speaker direction must be stated, or the model inverts the roles.
   check(`${card.id}: style states speaker direction`, /发言者|speaker/i.test(card.style), card.style.slice(0, 80))
   check(`${card.id}: has examples`, card.examples.length > 0)
-  // Every intensity the card offers must have its own demonstrations, or the
-  // field is decorative and the model has to guess what that level means.
+  // Every intensity the ladder offers must RESOLVE to demonstrations. A level
+  // with no per-intensity set falls back to the card's flat `examples`, which
+  // is the documented behaviour — so the assertion is on the resolved set, not
+  // on the raw map.
   check(`${card.id}: has per-intensity examples`, card.examplesByIntensity !== undefined, JSON.stringify(Object.keys(card.examplesByIntensity ?? {})))
+  const resolvedByLevel = Object.fromEntries(
+    INTENSITY_LEVELS.map((level) => [level, examplesFor(card, level)]),
+  )
   check(
-    `${card.id}: covers light and zealot`,
-    card.examplesByIntensity?.light !== undefined && card.examplesByIntensity?.zealot !== undefined,
-    JSON.stringify(Object.keys(card.examplesByIntensity ?? {})),
+    `${card.id}: every intensity rung resolves to demonstrations`,
+    INTENSITY_LEVELS.every((level) => Array.isArray(resolvedByLevel[level]) && resolvedByLevel[level].length > 0),
+    JSON.stringify(Object.fromEntries(INTENSITY_LEVELS.map((level) => [level, resolvedByLevel[level].length]))),
+  )
+  // The ladder must actually do something: no two rungs may resolve to the
+  // same demonstrations, or the levels are decorative.
+  const resolvedSets = INTENSITY_LEVELS.map((level) => JSON.stringify(resolvedByLevel[level]))
+  check(
+    `${card.id}: intensity levels are distinct`,
+    new Set(resolvedSets).size === resolvedSets.length,
+    'two rungs resolve to identical demonstrations',
   )
   // Every example must carry its technical facts through. A rewrite may
   // rephrase natural language — that is the point of a rewrite — but it may
@@ -309,22 +338,95 @@ check(
   clientSource.includes(`const PREFIX = '${PREFIX}'`),
   `host PREFIX=${PREFIX}; client does not declare it identically`,
 )
-for (const route of ['/cards', '/rewrite', '/cards/save', '/cards/delete', '/reveal']) {
+for (const route of ['/cards', '/rewrite', '/cards/save', '/cards/delete', '/cards/reset', '/reveal']) {
   check(`client calls ${route}`, clientSource.includes(`\${PREFIX}${route}`), route)
 }
 
-// The control must be able to turn the rewrite OFF. A persona picker with no
-// way back to "no persona" traps the user in whatever they last selected, and
-// the primary action must be a visible control rather than a hidden gesture.
+// The rewrite is triggered by the composer's OWN send gesture (button or
+// Enter), so the menu carries no separate run action. What the menu must
+// provide is a way to turn the persona off and to see the current choice.
 check('client declares an off state', clientSource.includes("const OFF = 'off'"), 'OFF constant missing')
 check('the off state is the default selection', /readLocal\(cardKey\(sessionKey\)\) \?\? OFF/.test(clientSource))
 check('the menu offers the off choice', clientSource.includes("pickCard(OFF)"))
 check(
-  'the menu carries a visible rewrite action',
-  clientSource.includes("t('control.menu.run')") && clientSource.includes('pf-run'),
-  'the rewrite must be reachable from the menu, not only a hidden gesture',
+  'the menu no longer duplicates the send action',
+  !clientSource.includes('pf-run'),
+  'the send gesture is the trigger; a second run button would duplicate it',
 )
 check('no hidden right-click-only trigger remains', !clientSource.includes('onContextMenu'), 'onContextMenu still present')
+
+// Four intensity rungs. A jump from medium straight to zealot left no way to
+// ask for a strong voice that is not yet full ritual.
+check(
+  'the intensity ladder has four rungs',
+  /INTENSITY_LEVELS = \['light', 'medium', 'strong', 'zealot'\]/.test(clientSource),
+  'expected light/medium/strong/zealot',
+)
+check(
+  'every rung is labelled',
+  ['light', 'medium', 'strong', 'zealot'].every((level) => clientSource.includes(`'control.intensity.${level}'`)),
+  'a rung without a label renders a raw key',
+)
+
+// The composer's native send action starts a rewrite. There is no plugin hook
+// for it, so the client intercepts the click on the composer card and
+// identifies the button by its accessible name from the shell's own
+// `conversation` locale namespace. Every guard must fail toward letting the
+// native send happen.
+check(
+  'client binds the shell conversation namespace for send labels',
+  clientSource.includes("locale.bind('conversation')"),
+  'send-button identification relies on the conversation namespace',
+)
+check(
+  'client intercepts the composer send click',
+  clientSource.includes("card.addEventListener('click', onClickCapture, true)"),
+  'no send interception attached',
+)
+check(
+  'client scopes the interception to the composer card',
+  clientSource.includes("own.closest('[data-composer-card]')"),
+  'the listener must be scoped to the composer card, not the document',
+)
+check(
+  'interception reads the send labels rather than a CSS class',
+  clientSource.includes('sendLabels()') && !clientSource.includes('RlGAzG'),
+  'identifying the button by a hashed class would break on any restyle',
+)
+check(
+  'a rewrite is never rewritten twice',
+  clientSource.includes('lastRewrite'),
+  'the send gesture must not loop rewriting its own output',
+)
+check(
+  'an in-flight rewrite swallows the send click',
+  /snapshot\.busy === true[\s\S]{0,260}preventDefault\(\)/.test(clientSource),
+  'sending during a rewrite would send the un-rewritten draft',
+)
+// Enter is the primary send gesture and does not go through the button, so the
+// keydown path must be intercepted too — while leaving Shift+Enter, IME
+// composition and the modifier chords alone.
+check(
+  'client intercepts the Enter send gesture',
+  clientSource.includes('onKeyDownCapture') && clientSource.includes("event.key !== 'Enter'"),
+  'Enter sends without the button, so it needs its own listener',
+)
+check(
+  'Enter interception ignores newline and composition',
+  /shiftKey \|\| event\.altKey \|\| event\.ctrlKey \|\| event\.metaKey/.test(clientSource)
+    && clientSource.includes('event.isComposing'),
+  'Shift+Enter must insert a newline and an IME commit must not send',
+)
+check(
+  'Enter interception is scoped to the composer text field',
+  clientSource.includes("target.closest('[data-composer-input]')"),
+  'intercepting Enter globally would break every other input',
+)
+check(
+  'both send paths share one decision function',
+  clientSource.includes('interceptSend(event)') && clientSource.includes('const interceptSend = (event)'),
+  'the click and Enter paths must not drift apart',
+)
 
 // ---------------------------------------------------------------------------
 section('host halves')
@@ -342,6 +444,8 @@ for (const file of ['index.js', 'routes.js', 'store.js', 'rewrite.js', 'prompts.
 
 // ---------------------------------------------------------------------------
 section('result')
+
+await rm(ISOLATED_HOME, { recursive: true, force: true })
 
 console.log(`\n${checks - failures}/${checks} checks passed`)
 if (failures > 0) {

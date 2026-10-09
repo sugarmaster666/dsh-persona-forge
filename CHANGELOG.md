@@ -8,6 +8,60 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 Nothing yet.
 
+## [0.2.0] - 2026-10-09
+
+### Added
+
+- **The composer's own send gesture starts the rewrite.** Pressing the native
+  **Send** button, or **Enter**, rewrites the draft instead of sending it raw.
+  In review mode the comparison panel appears; in direct mode the rewrite is
+  sent. The menu's separate "Rewrite with this persona" button is gone, because
+  the send gesture replaced it.
+- **Enter gets its own listener.** Enter is the primary send gesture and does
+  not go through the button at all — the editor's keymap calls the shell's
+  submit directly. Shift+Enter (newline), IME composition and the modifier
+  chords the shell ignores still fall through untouched.
+- **A fourth intensity rung, 重 / Strong.** The ladder was light → medium →
+  zealot, which left no way to ask for a strong voice that is not yet full
+  ritual. Every bundled card now ships demonstrations for all four rungs.
+- **Restore bundled** in the character-card manager, for a user card that
+  shadows a bundled one.
+- Inline explanations for `intensity` and `fidelity` in the card editor.
+
+### Changed
+
+- The review-first description now describes what actually happens: the rewrite
+  appears in the comparison panel and the draft is left alone until you confirm.
+- Segmented controls are wider, and the review panel is capped to the composer
+  card width instead of spanning the whole conversation.
+
+### Fixed
+
+- **A seeded card could freeze a bundled card at the version that shipped
+  first.** Seeding wrote a copy of each bundled card into the user directory,
+  and that copy shadows the bundled one — so an improved bundled card in a later
+  release could never reach anyone who had already run an earlier version. The
+  store now records what it seeded, together with a hash of the exact bytes: a
+  copy still matching that hash is untouched and is refreshed on upgrade, while
+  a copy the user edited is never written over. A file with no ledger entry is
+  treated as the user's own card and is left alone.
+- **The seed ledger was loaded as a character card**, producing a spurious
+  "card has no name" diagnostic on every catalog read. The loader now skips
+  dot-files.
+- **`check.mjs` read the developer's real card directory.** The store merges the
+  bundled cards with `$DSH_HOME/persona-cards`, so a stale seeded card silently
+  replaced the bundled one and the suite's results depended on whatever the
+  developer happened to have saved. The suite now isolates `DSH_HOME` to a
+  temporary directory before importing the store.
+
+### Security
+
+- Both send-intercept paths are fail-safe: the locale service being absent, the
+  composer card not being found, a label mismatch, the persona being off, an
+  empty draft, or a draft that was already rewritten all fall through to the
+  native send. Disabling the plugin unmounts the component and removes its
+  listeners entirely, so sending behaves exactly as if it were never installed.
+
 ## [0.1.2] - 2026-10-09
 
 ### Fixed
@@ -125,7 +179,8 @@ First public release.
   tools, and never enters the session log. What the session records is the text
   the user actually sent.
 
-[Unreleased]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.1.2...HEAD
+[Unreleased]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.1.2...v0.2.0
 [0.1.2]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/sugarmaster666/dsh-persona-forge/releases/tag/v0.1.0

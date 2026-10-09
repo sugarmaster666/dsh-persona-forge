@@ -248,6 +248,66 @@ check(
   seededText.includes('id: omnissiah') && seededText.includes('examples:'),
   seededText.slice(0, 140),
 )
+// Seeding records what it wrote, so a later release can refresh an untouched
+// copy instead of freezing it at the version that shipped first.
+const ledgerPath = join(cardDir, '.persona-forge-seeded.json')
+const ledger = JSON.parse(await readFileSeed(ledgerPath, 'utf8'))
+check(
+  'seeding records a ledger of what it wrote',
+  typeof ledger?.seeded?.omnissiah === 'string' && ledger.seeded.omnissiah.length === 64,
+  JSON.stringify(ledger).slice(0, 160),
+)
+
+// A stale UNTOUCHED seeded copy must be refreshed: this is the case that would
+// otherwise hide an improved bundled card forever behind the seeded shadow.
+{
+  const { createCardStore } = await import('../lib/store.js')
+  const store = createCardStore()
+  const staleText = 'id: omnissiah\nname: STALE SEED\nmode: llm\nfidelity: style\nintensity: medium\nstyle: stale\n'
+  await writeFile(join(cardDir, 'omnissiah.yml'), staleText, 'utf8')
+  // Record the stale bytes as if this plugin had seeded them.
+  const { createHash } = await import('node:crypto')
+  const staleHash = createHash('sha256').update(staleText, 'utf8').digest('hex')
+  await writeFile(ledgerPath, JSON.stringify({ version: 1, seeded: { omnissiah: staleHash } }), 'utf8')
+  const bundleText = await readFileSeed(new URL('../cards/omnissiah.yml', import.meta.url), 'utf8')
+  const yaml = await import('../lib/yaml.js')
+  store.setBuiltins([{ id: 'omnissiah', document: yaml.parseYaml(bundleText) }])
+  const refreshed = await store.seedBuiltins()
+  check('an untouched seeded copy is refreshed', refreshed.includes('omnissiah'), JSON.stringify(refreshed))
+  const after = await readFileSeed(join(cardDir, 'omnissiah.yml'), 'utf8')
+  check(
+    'the refresh replaced the stale contents',
+    !after.includes('STALE SEED'),
+    after.slice(0, 120),
+  )
+}
+
+// And an EDITED copy must still never be overwritten, even though the ledger
+// has a record for that id.
+{
+  const { createCardStore } = await import('../lib/store.js')
+  const store = createCardStore()
+  const editedText = 'id: omnissiah\nname: MY EDIT\nmode: llm\nfidelity: style\nintensity: medium\nstyle: my own style\n'
+  await writeFile(join(cardDir, 'omnissiah.yml'), editedText, 'utf8')
+  const bundleText = await readFileSeed(new URL('../cards/omnissiah.yml', import.meta.url), 'utf8')
+  const yaml = await import('../lib/yaml.js')
+  store.setBuiltins([{ id: 'omnissiah', document: yaml.parseYaml(bundleText) }])
+  const written = await store.seedBuiltins()
+  const after = await readFileSeed(join(cardDir, 'omnissiah.yml'), 'utf8')
+  check('an edited copy is never refreshed', !written.includes('omnissiah') && after.includes('MY EDIT'), after.slice(0, 120))
+}
+
+// Restore the real bundled copy and ledger for the checks that follow.
+await writeFile(join(cardDir, 'omnissiah.yml'), seededText, 'utf8')
+{
+  const { createCardStore } = await import('../lib/store.js')
+  const store = createCardStore()
+  const bundleText = await readFileSeed(new URL('../cards/omnissiah.yml', import.meta.url), 'utf8')
+  const yaml = await import('../lib/yaml.js')
+  store.setBuiltins([{ id: 'omnissiah', document: yaml.parseYaml(bundleText) }])
+  await store.seedBuiltins()
+}
+await new Promise((resolve) => setTimeout(resolve, 400))
 
 // Seeding must never clobber a user's own edit: an existing file wins. The
 // replacement uses `examples:` with no value rather than `[]`, because a flow
@@ -411,6 +471,28 @@ check('card delete succeeds', removed.status === 200 && removed.body?.value?.rem
 
 const afterDelete = await post('/persona-forge/cards', {})
 check('the deleted card is gone', afterDelete.body?.value?.cards?.some((card) => card.id === 'written-by-test') === false, JSON.stringify(afterDelete.body?.value?.cards?.map((card) => card.id)))
+
+// ---------------------------------------------------------------------------
+console.log('\n== restore bundled card')
+
+// A user card whose id matches a bundled one shadows it, and the catalog says
+// so — that is what the settings page keys its "restore bundled" action on.
+const shadowed = (await post('/persona-forge/cards', {})).body?.value?.cards?.find((card) => card.id === 'omnissiah')
+check('a shadowing user card is marked', shadowed?.shadowsBuiltin === true, JSON.stringify(shadowed?.shadowsBuiltin))
+
+const reset = await post('/persona-forge/cards/reset', { id: 'omnissiah' })
+check('restore bundled succeeds', reset.status === 200, JSON.stringify(reset.body))
+
+const afterReset = await post('/persona-forge/cards', {})
+const restored = afterReset.body?.value?.cards?.find((card) => card.id === 'omnissiah')
+check(
+  'restoring brings back every intensity rung from the bundle',
+  ['light', 'medium', 'strong', 'zealot'].every((level) => restored?.examplesByIntensity?.[level] !== undefined),
+  JSON.stringify(Object.keys(restored?.examplesByIntensity ?? {})),
+)
+
+const resetUnknown = await post('/persona-forge/cards/reset', { id: 'not-bundled' })
+check('restoring an unknown id is 404', resetUnknown.status === 404, JSON.stringify(resetUnknown.body))
 
 // ---------------------------------------------------------------------------
 console.log('\n== teardown')
