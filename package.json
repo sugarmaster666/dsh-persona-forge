@@ -1,6 +1,6 @@
 {
   "name": "dsh-persona-forge",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "给 DeepSeek Harness 用的角色扮演提示词改写插件：在输入框选一张角色卡，草稿就会由 harness 的模型改写成该角色的口吻（跟随当前会话正在使用的模型），然后直接发出或先人工审查。原草稿始终保留。",
   "type": "module",
   "license": "MIT",
