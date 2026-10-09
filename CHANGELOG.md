@@ -6,6 +6,30 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-10-09
+
+### Fixed
+
+- **A rewrite waiting on a slow model no longer reads as frozen.** The panel
+  showed 改写中 with no sense of time, so a slow rewrite was indistinguishable
+  from a hang. The host has had a 120s deadline all along, so the panel was
+  never stuck forever — but two minutes of a silent spinner looks exactly like a
+  freeze. It now ticks elapsed seconds, and past 45s says the model may just be
+  slow and how to give up.
+
+### Removed
+
+- **The settings page's model-check checkbox.** It duplicated the plugin row's
+  own `factCheck` config — a second setting for the same thing, sitting on a
+  page that is about cards. The host config is the single control and already
+  defaults to off. The checkbox, its dictionary keys and the client-side
+  preference behind it are gone.
+- **The permanent drift-check instruction line.** The button's tooltip already
+  carried the same sentence. The page now renders only the check RESULT, which
+  is real feedback rather than the same copy twice.
+- Three dictionary keys no route or component referenced:
+  `settings.ai.briefLabel`, `settings.changed`, `error.busy`.
+
 ## [0.3.0] - 2026-10-09
 
 ### Added
@@ -325,7 +349,8 @@ First public release.
   tools, and never enters the session log. What the session records is the text
   the user actually sent.
 
-[Unreleased]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.3.1...HEAD
+[0.3.1]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.2.1...v0.3.0
 [0.2.1]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.1.2...v0.2.0
