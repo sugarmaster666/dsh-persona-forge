@@ -313,6 +313,19 @@ for (const route of ['/cards', '/rewrite', '/cards/save', '/cards/delete', '/rev
   check(`client calls ${route}`, clientSource.includes(`\${PREFIX}${route}`), route)
 }
 
+// The control must be able to turn the rewrite OFF. A persona picker with no
+// way back to "no persona" traps the user in whatever they last selected, and
+// the primary action must be a visible control rather than a hidden gesture.
+check('client declares an off state', clientSource.includes("const OFF = 'off'"), 'OFF constant missing')
+check('the off state is the default selection', /readLocal\(cardKey\(sessionKey\)\) \?\? OFF/.test(clientSource))
+check('the menu offers the off choice', clientSource.includes("pickCard(OFF)"))
+check(
+  'the menu carries a visible rewrite action',
+  clientSource.includes("t('control.menu.run')") && clientSource.includes('pf-run'),
+  'the rewrite must be reachable from the menu, not only a hidden gesture',
+)
+check('no hidden right-click-only trigger remains', !clientSource.includes('onContextMenu'), 'onContextMenu still present')
+
 // ---------------------------------------------------------------------------
 section('host halves')
 

@@ -8,6 +8,45 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 Nothing yet.
 
+## [0.1.1] - 2026-10-09
+
+Three defects found by using the plugin in a real session.
+
+### Fixed
+
+- **The rewrite could not be started from the UI.** The only trigger was a
+  right-click on the 🎭 control, which is undiscoverable — picking a character
+  and an intensity changed settings and then nothing happened. The menu now
+  opens with a full-width **"Rewrite with this persona"** action, disabled with
+  an explanatory hint until a character is selected.
+- **Filled controls were invisible in the light theme.** The selected segment
+  and the primary action used `--dsw-alias-brand-primary` as a fill with a
+  hard-coded white label. That token is *inverted* — near-white in the dark
+  theme and near-black in the light theme — so the label vanished against it.
+  Filled controls now use `--dsw-alias-button-primary-fill` with
+  `--dsw-alias-label-primary-foreground`, exactly like the host Button, and the
+  segmented control uses the host's translucent-track + raised-pill pattern.
+- **The card directory was empty.** The bundled cards live read-only inside the
+  package, so "open the card directory" showed an empty folder. The bundled
+  cards are now seeded into `~/.dsh/persona-cards/` on first mount as editable
+  files. Seeding uses an exclusive create (`wx`), so it can never overwrite a
+  card you wrote — including one created in the window between a stat and a
+  write.
+- **A half-written card could silently replace a good one.** A single file save
+  emits several watcher events, and a reload could read the file mid-write and
+  parse a truncated card. Reloads are now debounced so they read settled files.
+
+### Added
+
+- **An explicit "No persona" state.** The control previously had no way back to
+  sending exactly what you typed; it is now a first-class, persisted choice
+  listed alongside the cards, and the state the control starts in.
+- `scripts/host-check.mjs` covers the seeding behaviour, including that a user
+  edit is never overwritten.
+- `scripts/check.mjs` asserts the UI contract that regressed here: the off
+  state exists, the rewrite is reachable from a visible menu action, and no
+  hidden gesture-only trigger remains.
+
 ## [0.1.0] - 2026-10-09
 
 First public release.
@@ -58,5 +97,6 @@ First public release.
   tools, and never enters the session log. What the session records is the text
   the user actually sent.
 
-[Unreleased]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/sugarmaster666/dsh-persona-forge/releases/tag/v0.1.0

@@ -171,8 +171,44 @@ check('the rewrite call creates no session turn', llm.calls[0]?.sessionId === un
 console.log('\n== template mode bypasses the model')
 
 const cardDir = join(home, 'persona-cards')
-const { mkdir } = await import('node:fs/promises')
+const { mkdir, readdir, readFile: readFileSeed } = await import('node:fs/promises')
 await mkdir(cardDir, { recursive: true })
+
+// ---------------------------------------------------------------------------
+console.log('\n== bundled cards seed the user directory')
+
+// Seeding runs at mount, before this point. The bundled cards must appear as
+// editable files so "open the card directory" is not an empty folder.
+const seededFiles = (await readdir(cardDir)).filter((name) => name.endsWith('.yml')).sort()
+check(
+  'bundled cards are seeded into the card directory',
+  seededFiles.includes('omnissiah.yml') && seededFiles.includes('muscle-crew.yml'),
+  JSON.stringify(seededFiles),
+)
+const seededText = await readFileSeed(join(cardDir, 'omnissiah.yml'), 'utf8')
+check(
+  'the seeded file is editable YAML carrying its examples',
+  seededText.includes('id: omnissiah') && seededText.includes('examples:'),
+  seededText.slice(0, 140),
+)
+
+// Seeding must never clobber a user's own edit: an existing file wins. The
+// replacement uses `examples:` with no value rather than `[]`, because a flow
+// sequence is a construct this reader deliberately refuses.
+await writeFile(join(cardDir, 'omnissiah.yml'), 'id: omnissiah\nname: MY EDIT\nmode: llm\nfidelity: style\nintensity: medium\nstyle: my own style\n', 'utf8')
+await new Promise((resolve) => setTimeout(resolve, 400))
+const afterEdit = await post('/persona-forge/cards', {})
+const editedCard = afterEdit.body?.value?.cards?.find((card) => card.id === 'omnissiah')
+check('a user edit is not overwritten by the bundled card', editedCard?.name === 'MY EDIT', JSON.stringify(editedCard?.name))
+check(
+  'the user edit produced no diagnostic',
+  afterEdit.body?.value?.diagnostics?.length === 0,
+  JSON.stringify(afterEdit.body?.value?.diagnostics),
+)
+// Restore the bundled content for the checks that follow.
+await writeFile(join(cardDir, 'omnissiah.yml'), seededText, 'utf8')
+await new Promise((resolve) => setTimeout(resolve, 300))
+
 await writeFile(join(cardDir, 'litany.yml'), [
   'id: litany',
   'name: 固定祷词',

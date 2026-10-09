@@ -1,6 +1,6 @@
 {
   "name": "dsh-persona-forge",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Persona-style prompt rewriter for DeepSeek Harness: pick a character card in the composer, rewrite the draft into that character's voice through the harness LLM (following the session's own model), then send directly or review first. The original draft is always preserved.",
   "type": "module",
   "license": "MIT",

@@ -124,18 +124,22 @@ you want them gone.
 
 ## Use
 
-1. Click 🎭 in the composer tool row and pick a character.
-2. Set **intensity** (light / medium / zealot) and **send mode**:
+1. Write your request in the composer.
+2. Click 🎭 in the composer tool row and pick a character. The menu opens with
+   **Rewrite with this persona** — click it to rewrite. (The action stays
+   disabled until a character is selected.)
+3. Set **intensity** (light / medium / zealot) and **send mode**:
    - **Review first** — the rewrite fills the composer, with a before/after
-     panel. You press Send, Fill only, Send original, or Rewrite again.
+     panel. You press Send, Fill only, Restore original, or Rewrite again.
    - **Send directly** — the rewrite is sent as your message immediately. The
      panel stays open afterwards showing exactly what went out, because a sent
      message cannot be recalled.
-3. Write your request and either click the control again (right-click also
-   works) or send normally.
+4. **No persona** in the same menu turns rewriting off: the composer sends
+   exactly what you typed. This is the state the control starts in, and your
+   choice is remembered per session.
 
-Your draft is preserved: *Send original* restores it, and *Fill only* puts the
-rewrite in the composer without sending.
+Your draft is preserved: *Restore original* puts it back, and *Fill only* puts
+the rewrite in the composer without sending.
 
 ### The preservation check
 
