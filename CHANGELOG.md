@@ -8,6 +8,34 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 Nothing yet.
 
+## [0.1.2] - 2026-10-09
+
+### Fixed
+
+- **No route was ever registered, so the whole UI was inert.** The plugin
+  declares no service dependencies, so it applied *before* the web server
+  mounted; reading `ctx.get('webServer')` at that moment found nothing and the
+  route registration was silently skipped. Every request then fell through to
+  the SPA fallback — an empty `405`/`404` body, which is what made the character
+  list empty and "open the card directory" appear to fail. The entry now waits
+  for the service with `ctx.inject(['webServer'], …)` and still loads on a
+  composition that has no web server.
+- **The menu let the conversation show through it.** `--dsw-menu-surface-fill`
+  is translucent by design (~58% alpha) and only reads correctly with the
+  host's `backdrop-filter` behind it; the plugin used the fill without the blur.
+  Both are now applied together, exactly as the host Menu does, with the opaque
+  `--dsw-alias-bg-overlay` as the fallback.
+- **The card watcher could leak on unload.** The watcher is created
+  asynchronously, so a plugin unloaded in that window never closed it. A
+  disposed flag now closes a watcher created after teardown.
+
+### Added
+
+- `host-check.mjs` reproduces the mounting order that caused the missing
+  routes: its stub context only runs `inject` callbacks for mounted services,
+  and asserts that routes register through `inject` and that a
+  web-server-less composition still loads.
+
 ## [0.1.1] - 2026-10-09
 
 Three defects found by using the plugin in a real session.
@@ -97,6 +125,7 @@ First public release.
   tools, and never enters the session log. What the session records is the text
   the user actually sent.
 
-[Unreleased]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.1.1...HEAD
+[Unreleased]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.1.2...HEAD
+[0.1.2]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/sugarmaster666/dsh-persona-forge/releases/tag/v0.1.0

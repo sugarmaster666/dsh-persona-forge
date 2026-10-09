@@ -41,8 +41,26 @@ process.env.DSH_HOME = home
  */
 function makeContext(services) {
   const disposers = []
-  return {
+  const context = {
     get: (name) => services[name],
+    /**
+     * Deferred service wiring. The web server mounts LATER than this plugin,
+     * so the plugin must wait for it with `inject` rather than read it during
+     * `apply()` — reading it then found nothing and registered no routes at
+     * all, which is exactly the bug this stub exists to reproduce.
+     *
+     * The callback receives a child context; its effects land in the parent so
+     * teardown still reaches them. A service that never mounts means the
+     * callback never runs, matching the real behaviour.
+     */
+    inject: (names, callback) => {
+      const mounted = {}
+      for (const name of names) {
+        if (services[name] === undefined) return
+        mounted[name] = services[name]
+      }
+      callback({ ...context, ...mounted })
+    },
     effect: (factory) => {
       const dispose = factory()
       if (typeof dispose === 'function') disposers.push(dispose)
@@ -58,6 +76,7 @@ function makeContext(services) {
       }
     },
   }
+  return context
 }
 
 /** A stub llm service that answers with a fixed persona rewrite. */
@@ -106,6 +125,44 @@ apply(ctx, { sendMode: 'review', factCheck: true, watchCards: true })
 await new Promise((resolve) => setTimeout(resolve, 200))
 
 check('webServer route captured', registered !== undefined)
+
+// The bug this guards against: a plugin with no declared service dependencies
+// applies BEFORE the web server mounts. Reading `ctx.get('webServer')` during
+// apply() found nothing, so no route was ever registered and every request fell
+// through to the SPA fallback with an empty 405. The plugin must therefore wait
+// for the service through `inject`, and must still load when it never arrives.
+{
+  const lateRegister = []
+  const lateCtx = makeContext({
+    llm,
+    webServer: {
+      register(route) {
+        lateRegister.push(route)
+        return () => {}
+      },
+    },
+  })
+  apply(lateCtx, {})
+  check(
+    'routes register when the web server is reached through inject',
+    lateRegister.length === 1,
+    `registered=${lateRegister.length}`,
+  )
+  lateCtx.disposeAll()
+}
+{
+  // A composition with no web server must still load, just without routes.
+  const headlessCtx = makeContext({ llm })
+  let threw = false
+  try {
+    apply(headlessCtx, {})
+  } catch (error) {
+    threw = true
+    check('a web-server-less composition loads without throwing', false, String(error))
+  }
+  if (!threw) check('a web-server-less composition loads without throwing', true)
+  headlessCtx.disposeAll()
+}
 
 // ---------------------------------------------------------------------------
 console.log('\n== routes over a real socket')
