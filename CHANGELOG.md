@@ -6,13 +6,6 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
-### Changed
-
-- The Chinese README is now the primary `README.md`, and the English one is
-  `README.en.md`. GitHub, npm and the repository landing page therefore open in
-  Chinese, with a language switch at the top of each file. The npm package
-  description is Chinese for the same reason.
-
 ## [0.3.0] - 2026-10-09
 
 ### Added
@@ -20,9 +13,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - **AI 代填（AI draft）**, in the character-card manager. Describe the character
   in a sentence — "a grumpy but utterly reliable old lighthouse keeper" — and the
   model writes the whole card: the style text, a name, an icon, a description and
-  the conversion examples for all four intensity levels. It runs on the session's
-  own model, like the rewrite does, so there is still only one model to think
-  about.
+  the conversion examples for all four intensity levels.
 
   The result **only prefills the form**. Nothing is written to the card directory
   until the user reviews it and presses Save, so a generation the user dislikes
@@ -30,8 +21,42 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   generated card is also passed through the very same validator the save path
   uses, so this route cannot hand the form a card that cannot be saved.
 
+  It sits **inside the new-card flow** (the form that "New character card" opens),
+  with a hint line on the settings page so it is discoverable without pressing a
+  button. It uses the **harness default model**, and says so: the
+  `settings.section` slot receives only `{ close }` from the shell, so it has no
+  session id to follow. The resolved model is displayed before and after
+  generating, rather than leaving the user to assume it matches the session.
+
+- A **free, local preservation check** (`lib/preserve.js`), always on. It compares
+  the technical tokens of the draft against the rewrite — identifiers, paths,
+  versions, numbers, `--flags`, acronyms — and **names** what went missing. It
+  makes no model call, so it costs no tokens and adds no latency.
+
+- **Per-message rewrite mode and fidelity** in the 🎭 menu, alongside intensity.
+  Mode falls back to the card's own when the card has no content for the chosen
+  mode. Fidelity may be **narrowed** (a `strategy` card asked to behave as
+  voice-only for one message) but never **widened**, and the server enforces the
+  same rule.
+
+- A **model-check switch** in the 🎭 menu, remembered per session.
+
 - The card form now edits the **per-intensity examples**. They were part of the
   card but invisible in the UI, which is what made the bug below possible.
+
+### Changed
+
+- **The model-based preservation check is now off by default** and switchable
+  from the menu. It is the only thing that can see a requirement reworded weaker,
+  or a constraint added in prose — but it costs a second model call on **every**
+  send, and the new local check already proves the common and most damaging
+  failure for free. `factCheck` in the plugin config now sets that default, and
+  only an explicit `true` enables it.
+
+- The Chinese README is the primary `README.md` and the English one is
+  `README.en.md`, so GitHub, npm and the repository landing page open in Chinese,
+  with a language switch at the top of each file. The npm package description is
+  Chinese for the same reason.
 
 ### Fixed
 
@@ -56,6 +81,12 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   and changed nothing. Delete is now shown only where it does something, and the
   confirmation for an edited bundled card says that its changes are discarded
   and the bundled version returns.
+
+- **A narrowed fidelity never reached the model.** The route computed the
+  narrowed value and reported it in the response, but `buildSystemPrompt` read
+  `card.fidelity` directly — so the setting appeared to work and did nothing. The
+  effective fidelity is now passed into the prompt builder, and a test asserts on
+  the prompt itself rather than only on the response.
 
 - Three examples in the bundled 肌肉集团 · 硬邦邦 card dropped the word "bug"
   from their input. The self-check now verifies the per-intensity examples too,

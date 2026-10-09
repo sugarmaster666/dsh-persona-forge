@@ -110,9 +110,15 @@ const { apply } = await import('../lib/index.js')
 
 const llm = makeLlm('万机之座在上，恳请您为我们编写一个快速排序算法，使重复之数各归其位。')
 const sessionHeader = { config: { provider: 'stub-provider', model: 'stub-model' } }
+// The harness-wide default route. A real profile has this service (the desktop
+// profile configures it), and it is what the settings page's AI draft falls
+// back to, because `settings.section` receives no session id from the shell.
+// Mutable so the unconfigured path can also be exercised.
+let defaultSelection = { provider: 'stub-provider', model: 'stub-model' }
 const services = {
   llm,
   sessions: { get: (id) => (id === 'session-1' ? { requestHeader: () => sessionHeader } : undefined) },
+  agentDefaultModel: { currentSelection: () => defaultSelection },
   webServer: {
     register(route) {
       check('route registered under the plugin prefix', route.path === '/persona-forge', route.path)
@@ -219,6 +225,79 @@ check(
 )
 check('rewrite reports the card fidelity', rewrite.body?.value?.fidelity === 'style', rewrite.body?.value?.fidelity)
 check('rewrite carries a fact-check verdict', typeof rewrite.body?.value?.factCheck?.state === 'string', JSON.stringify(rewrite.body?.value?.factCheck))
+// The free deterministic check always runs, and it is reported separately from
+// the optional model check so the panel can show a concrete lost token.
+check('rewrite carries the local facts verdict', typeof rewrite.body?.value?.facts?.state === 'string', JSON.stringify(rewrite.body?.value?.facts))
+
+// ---------------------------------------------------------------------------
+console.log('\n== per-message mode and fidelity')
+
+/**
+ * The system prompt of the most recent REWRITE call.
+ *
+ * Not simply the last call: with the model fact check enabled, every rewrite is
+ * followed by a second call carrying the check's own system prompt. Selecting
+ * the rewrite by its prompt marker avoids asserting against the wrong call.
+ * @returns the rewrite system prompt, or an empty string.
+ */
+function lastRewriteSystem() {
+  for (let index = llm.calls.length - 1; index >= 0; index--) {
+    const system = String(llm.calls[index]?.system ?? '')
+    if (system.includes('VOICE TRANSFER')) return system
+  }
+  return ''
+}
+
+// Fidelity may be NARROWED per message: asking a strategy card to behave as
+// voice-only only removes the extra behavioural constraints, so it is strictly
+// safer than the card's own default.
+{
+  const narrowed = await post('/persona-forge/rewrite', { cardId: 'muscle-crew', text: 'fix a.js now', sessionId: 'session-1', fidelity: 'style' })
+  check('a strategy card can be narrowed to voice-only per message', narrowed.body?.value?.fidelity === 'style', JSON.stringify(narrowed.body?.value?.fidelity))
+  check(
+    'narrowing actually changes the system prompt',
+    lastRewriteSystem().includes('STYLE ONLY'),
+    'the narrowed fidelity must reach the prompt',
+  )
+}
+// Widening must be refused: a style card cannot be told to start adding
+// behavioural constraints, which would change the request beyond what its
+// author allowed. The request still succeeds, on the card's own terms.
+{
+  const widened = await post('/persona-forge/rewrite', { cardId: 'omnissiah', text: 'fix a.js now', sessionId: 'session-1', fidelity: 'strategy' })
+  check('a voice-only card cannot be widened per message', widened.body?.value?.fidelity === 'style', JSON.stringify(widened.body?.value?.fidelity))
+  check(
+    'the refusal to widen reaches the prompt too',
+    lastRewriteSystem().includes('STYLE ONLY'),
+    'widening must be silently ignored, not honoured',
+  )
+}
+// Mode override: only honoured when the card can actually satisfy it.
+{
+  const asTemplate = await post('/persona-forge/rewrite', { cardId: 'omnissiah', text: 'fix a.js now', sessionId: 'session-1', mode: 'template' })
+  check(
+    'a card with no template refuses a template override',
+    asTemplate.body?.value?.mode === 'llm',
+    JSON.stringify(asTemplate.body?.value?.mode),
+  )
+  const asLlm = await post('/persona-forge/rewrite', { cardId: 'omnissiah', text: 'fix a.js now', sessionId: 'session-1', mode: 'llm' })
+  check('an llm override on an llm card stays llm', asLlm.body?.value?.mode === 'llm', JSON.stringify(asLlm.body?.value?.mode))
+}
+
+// The deterministic check must catch a dropped identifier and say which one.
+{
+  const before = llm.calls.length
+  llm.setAnswer('万机之座在上，恳请您修好那个文件里的问题。')
+  const dropped = await post('/persona-forge/rewrite', { cardId: 'omnissiah', text: '修 a.js 里的 bug', sessionId: 'session-1' })
+  check('the local check fires when a rewrite drops an identifier', dropped.body?.value?.facts?.state === 'drift', JSON.stringify(dropped.body?.value?.facts))
+  check(
+    'the local check names the dropped token',
+    (dropped.body?.value?.facts?.missing ?? []).includes('a.js'),
+    JSON.stringify(dropped.body?.value?.facts),
+  )
+  check('the local check spends no extra model call', llm.calls.length === before + 2, `${String(before)} -> ${String(llm.calls.length)} (rewrite + fact check)`)
+  llm.setAnswer('万机之座在上，恳请您为我们编写一个快速排序算法，使重复之数各归其位。')
+}
 
 // The system prompt must carry the rules the design depends on.
 const sentSystem = llm.calls[0]?.system ?? ''
@@ -547,6 +626,30 @@ check(
   )
 }
 
+// The model check is a per-request switch: it costs a second call, so the
+// caller must be able to turn it off without editing config.
+{
+  const before = llm.calls.length
+  const off = await post('/persona-forge/rewrite', { cardId: 'omnissiah', text: 'fix a.js now', sessionId: 'session-1', modelCheck: false })
+  check('the model check can be switched off per request', off.body?.value?.factCheck?.state === 'skipped', JSON.stringify(off.body?.value?.factCheck))
+  check('switching it off really skips the call', llm.calls.length === before + 1, `${String(before)} -> ${String(llm.calls.length)} (rewrite only)`)
+  // The free local check must still run and still be reported — turning off the
+  // paid check must not turn off all checking.
+  check('the free local check still runs with the model check off', typeof off.body?.value?.facts?.state === 'string', JSON.stringify(off.body?.value?.facts))
+
+  const beforeOn = llm.calls.length
+  const on = await post('/persona-forge/rewrite', { cardId: 'omnissiah', text: 'fix a.js now', sessionId: 'session-1', modelCheck: true })
+  check('the model check can be switched on per request', on.body?.value?.factCheck?.state !== 'skipped', JSON.stringify(on.body?.value?.factCheck))
+  check('switching it on really spends the call', llm.calls.length === beforeOn + 2, `${String(beforeOn)} -> ${String(llm.calls.length)} (rewrite + check)`)
+}
+
+// The catalog reports which model an AI draft would use, so the settings page
+// can show it rather than leaving the user to guess.
+{
+  const catalog = await post('/persona-forge/cards', {})
+  check('the catalog reports the draft model', catalog.body?.value?.draftModel?.model === 'stub-model', JSON.stringify(catalog.body?.value?.draftModel))
+}
+
 // ---------------------------------------------------------------------------
 console.log('\n== AI card drafting')
 
@@ -611,12 +714,19 @@ llm.setAnswer('万机之座在上，恳请您为我们编写一个快速排序�
   const oversized = await post('/persona-forge/cards/draft', { brief: 'x'.repeat(4001), sessionId: 'session-1' })
   check('an oversized brief is rejected', oversized.status === 422, JSON.stringify(oversized.body))
 }
-// No resolvable route means the same clear 409 the rewrite gives. The stub has
-// no `agentDefaultModel` service, so nothing can resolve a route here.
+// A profile can genuinely have no resolvable route (no session request yet AND
+// no harness default configured). Simulate that by emptying the default, and
+// confirm both model-backed routes answer the same clear 409 rather than
+// failing opaquely.
 {
+  const saved = defaultSelection
+  defaultSelection = undefined
   const noRoute = await post('/persona-forge/cards/draft', { brief: 'a keeper', sessionId: 'unknown-session' })
   check('a draft with no resolvable model is refused with 409', noRoute.status === 409, `status=${String(noRoute.status)} ${JSON.stringify(noRoute.body)}`)
   check('the 409 says what to do', /send one message|default model/.test(noRoute.body?.error?.message ?? ''), JSON.stringify(noRoute.body?.error))
+  const noRouteRewrite = await post('/persona-forge/rewrite', { cardId: 'omnissiah', text: 'fix a.js', sessionId: 'unknown-session' })
+  check('the rewrite gives the same 409 when nothing resolves', noRouteRewrite.status === 409, `${String(noRouteRewrite.status)} ${JSON.stringify(noRouteRewrite.body)}`)
+  defaultSelection = saved
 }
 
 // ---------------------------------------------------------------------------

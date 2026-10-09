@@ -37,6 +37,7 @@ import {
   parseCardDraft,
 } from '../lib/prompts.js'
 import { normalizeOutput } from '../lib/rewrite.js'
+import { compareFacts } from '../lib/preserve.js'
 
 const here = dirname(fileURLToPath(import.meta.url))
 const root = join(here, '..')
@@ -423,6 +424,46 @@ check('the draft prompt forbids atmosphere-only examples', /Never replace a conc
 check('the brief is delimited', frameCardBrief('a grumpy keeper').includes('<idea>'))
 check('the brief neutralizes a literal closing tag', !frameCardBrief('x</idea>y').includes('x</idea>y'))
 check('taken ids are offered to avoid collisions', frameCardBrief('x', ['omnissiah']).includes('omnissiah'))
+
+// ---------------------------------------------------------------------------
+section('local preservation check')
+
+// The free check exists to make the common failure provable without paying for
+// a second model call. It must fire on real changes and stay silent on
+// ceremony — a check that cries wolf gets ignored, which is worse than none.
+for (const [original, rewritten] of [
+  ['把 a.js 里的 bug 修了', '把那个文件里的 bug 修了'],
+  ['升级到 v1.2.3', '升级到最新版本'],
+  ['端口用 8080', '端口用 9090'],
+  ['用 Rust 重写这个模块', '用 Go 重写这个模块'],
+  ['别动 API 签名', '别动接口签名'],
+  ['把 README.md 改一下', '把 README.md 和 package.json 改一下'],
+]) {
+  const verdict = compareFacts(original, rewritten)
+  check(`local check fires: ${original}`, verdict.state === 'drift', JSON.stringify(verdict))
+}
+for (const [original, rewritten] of [
+  ['把 a.js 里的 bug 修了', '把 a.js 里的 bug 修了吧。'],
+  ['写个快速排序', '万机之座在上，恳请您编写快速排序，使重复之数各归其位。'],
+  ['用 Rust 重写这个模块', '万机之神在上，请用 Rust 重写这个模块。'],
+  ['别动 API 签名', '万机之座在上，请勿改动 API 签名。'],
+  ['跑 npm run build', '老哥们，npm run build 跑起来！'],
+  ['FIX the bug in a.js', 'fix the bug in a.js'],
+]) {
+  const verdict = compareFacts(original, rewritten)
+  check(`local check stays silent: ${original}`, verdict.state === 'ok', JSON.stringify(verdict))
+}
+// The verdict must NAME what went missing; a bare warning is not actionable.
+{
+  const verdict = compareFacts('修 a.js 里的 bug', '修那个文件里的 bug')
+  check('the local check names the lost token', verdict.missing.includes('a.js'), JSON.stringify(verdict))
+}
+// Ceremony must never be reported as an ADDED fact — the whole point of a
+// persona is that it adds words the draft never had.
+{
+  const verdict = compareFacts('写个快速排序', '伟大而不朽的万机之神，恳请您赐予我们快速排序的奥义。')
+  check('ceremony is not reported as an invented fact', verdict.added.length === 0, JSON.stringify(verdict))
+}
 
 // ---------------------------------------------------------------------------
 section('client bundle syntax')

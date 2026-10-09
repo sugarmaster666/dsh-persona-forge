@@ -25,7 +25,7 @@ an explicit action.
 |---|---|
 | **Changes** | The voice, register and framing of the message you are about to send |
 | **Never changes** | Your technical requirements, constraints, paths, identifiers, numbers, code — and your draft until you say so |
-| **Model** | The same provider/model the current session uses. No separate model setting. |
+| **Model** | The rewrite uses the same provider/model the current session uses — no separate model setting. (The settings page's AI card draft instead uses the harness default, because that slot gets no session id; it shows you which model it will use.) |
 | **History** | The rewrite call is standalone: it creates no turn, cannot call tools, and never enters the session log. What the session records is the text you actually sent. |
 
 ### A word on what personas actually do
@@ -129,12 +129,19 @@ you want them gone.
 1. Click 🎭 in the composer tool row and pick a character. **No persona** in the
    same menu turns rewriting off — that is the state the control starts in, and
    your choice is remembered per session.
-2. Set **intensity** and **send mode**:
+2. Set **intensity, rewrite mode, fidelity, model check** and **send mode**:
    - Intensity is a four-rung ladder: **Light · Medium · Strong · Zealot**
      (轻 · 中 · 重 · 狂热). Light adds a touch of flavour; Medium is clear but not
      dominant; Strong gives the voice real weight while keeping the request the
      first thing the reader sees; Zealot is ritual throughout. A card carries
      its own default, and this choice overrides it for your session.
+   - **Rewrite mode**: Card default / Model rewrite / Template. A temporary
+     switch applies to this session only; if the card has no content for the
+     mode you picked (no `style`, or no `template`), the override is ignored and
+     falls back to the card's own mode.
+   - **Fidelity**: Card default / Voice only. **Narrowing only, never widening**
+     — see below.
+   - **Model check**: on / off — see *The preservation check* below.
    - **Review first** — the rewrite appears in the comparison panel below the
      composer; you read it and then press Send there. Your draft is untouched
      until you confirm.
@@ -183,15 +190,36 @@ message.
 After each rewrite, a second call on the same model compares the rewrite
 against your original and reports whether technical content survived:
 
-- **Technical facts preserved** — the check found no lost or invented substance.
-- **Technical facts may have changed** — it names what changed. Read the
-  rewrite before sending.
-- **Preservation check did not complete** — the check itself failed. This is
-  *not* an approval; treat the rewrite as unverified.
+The biggest risk is not a voice that sounds wrong — it is a rewrite that
+**quietly loses your request**. Two layers cover it, and they are complementary
+rather than redundant.
 
-The check is advisory and never blocks a rewrite. It is a second model call, so
-it doubles the latency and cost of each rewrite; disable it with
-`factCheck: false` in the plugin row's config if you would rather review by eye.
+**Layer 1: the local check — always on, free.** It compares the **technical
+tokens** of the draft against the rewrite, in this process: identifiers, file
+paths, versions, numbers, `--flag`s, acronyms like `API`. Anything lost is
+**named** ("Lost: a.js"). It calls no model, so it costs no tokens and adds no
+latency — and it cannot be turned off.
+
+**Layer 2: the model check — off by default, switchable in the menu.** It makes
+one **extra model call** per rewrite, to see what a token comparison cannot see
+at all:
+
+- a requirement reworded into something **weaker** (every word survives, the
+  demand does not);
+- a constraint **added in prose**.
+
+The cost is doubled latency and doubled tokens, which is why it ships off: the
+most common and most damaging failure — a dropped filename, number or version —
+is already proven for free by layer 1, so paying a model call on every send to
+re-check it is a waste. Turn it on when the drafts are technical enough to
+warrant it.
+
+The 🎭 menu has **Model check: on / off**, remembered per session. With it off
+the panel states plainly that the local check ran and spent no tokens, and says
+what that check does **not** cover — a narrow verdict has to declare its own
+limits.
+
+Both layers are **advisory** and never block a rewrite: they annotate, not stop.
 
 ---
 
@@ -234,16 +262,35 @@ remove — that copy is written back on the next start.
 
 ### AI draft
 
-Rather than writing a card from scratch, describe the character in a sentence in
-the settings page's **AI draft** box:
+Rather than writing a card from scratch, press **New character card** — the AI
+draft box sits at the **top of the form that opens**, not as a second competing
+entry on the page. A hint line on the settings page tells you it exists, so you
+do not have to press a button to discover it.
+
+Describe the character in a sentence:
 
 > a grumpy but utterly reliable old lighthouse keeper who speaks in short
 > sentences and nautical metaphors
 
 The model fills in the whole card — the style text, a name, an icon, a
-description, and the **conversion examples for all four intensity levels**. Like
-the rewrite, it runs on the **model the current session uses**, so there is still
-only one model to think about.
+description, and the **conversion examples for all four intensity levels**.
+
+**Which model it uses has to be stated precisely:**
+
+| Case | Which model |
+|---|---|
+| The **rewrite** from the 🎭 menu | **Follows the current session** (the provider/model of its last request header) |
+| **AI draft** in the settings page | The **harness default model** — because `settings.section` receives only `{ close }` from the shell and therefore **has no session id to follow** |
+
+These are usually the same model (the default is usually what the session is
+using), but **not guaranteed**: if you switch models inside a session, the
+settings page's draft still uses the default.
+
+So you do not have to guess, the settings page **shows the model it will use**
+(`provider / model`) and says that it is the harness default; after generating it
+shows the model it **actually** used. If neither can be resolved (no message sent
+yet and no default configured), you get an explicit 409 rather than a silent
+failure.
 
 **The result only fills the form; it is never saved automatically.** Edit it and
 press Save, or regenerate if you dislike it — the cost is one call. A generated
@@ -324,8 +371,22 @@ substance. Run it after editing a card.
 | `strategy` | The rewrite may **add behavioural constraints** that fit the character. | Deliberate cases — e.g. the bundled *肌肉集团* card, which adds "don't over-plan, don't search, don't ship beginner-tier solutions". |
 
 `strategy` genuinely changes your request, not just its wording. Keep review
-mode on for those cards. Fidelity is a property of the card, not a per-message
-toggle — a caller cannot widen it.
+mode on for those cards.
+
+**Fidelity is a property of the card. It can be overridden per session, but only
+ever narrowed, never widened:**
+
+- **Narrowing (allowed)** — a `strategy` card can be asked to behave as
+  voice-only for one message. That only ever **takes away** its power to add
+  constraints, so it is strictly safer than the card's own default.
+- **Widening (refused)** — a `style` card cannot be told to become `strategy`.
+  Widening lets the rewrite add constraints you never typed, which is the card
+  author's decision, not something to grant with a click on the way to Send. To
+  widen, edit the card.
+
+The 🎭 menu's *Fidelity* defaults to **Card default**; on a `style` card the hint
+says it cannot be widened here. The server enforces the same rule, so the UI
+never offers a control it would ignore.
 
 ### `mode: template`
 
@@ -345,9 +406,16 @@ Set in the plugin's loader row config:
   name: dsh-persona-forge
   config:
     sendMode: review   # review | direct — the initial composer default
-    factCheck: true    # run the preservation check after each rewrite
+    factCheck: false   # default for the MODEL check (off by default; see
+                       # "The preservation check"). The local token check does
+                       # not depend on this: it always runs and is free.
     watchCards: true   # reload the catalog when the card directory changes
 ```
+
+`factCheck` controls only the default for **layer 2**; the menu switch overrides
+it per session. Setting it to `true` adds **one extra model call to every
+rewrite** (doubled latency and tokens) and is only worth it when drafts are
+technical enough.
 
 ---
 
@@ -359,8 +427,8 @@ refused). Mounted under `/persona-forge`.
 
 | Route | Body | Returns |
 |---|---|---|
-| `/persona-forge/cards` | `{}` | `{ cards, diagnostics, directory, sendMode, factCheck }` |
-| `/persona-forge/rewrite` | `{ cardId, text, sessionId?, intensity? }` | `{ text, provider, model, mode, cardId, fidelity, intensity, elapsedMs, factCheck }` |
+| `/persona-forge/cards` | `{}` | `{ cards, diagnostics, directory, sendMode, factCheck, draftModel }` |
+| `/persona-forge/rewrite` | `{ cardId, text, sessionId?, intensity?, mode?, fidelity?, modelCheck? }` | `{ text, provider, model, mode, cardId, fidelity, intensity, elapsedMs, facts, factCheck }` |
 | `/persona-forge/cards/save` | `{ card }` | `{ id, path }` |
 | `/persona-forge/cards/delete` | `{ id }` | `{ removed }` |
 | `/persona-forge/cards/reset` | `{ id }` | `{ id }` — replaces the user card with the bundled one |
