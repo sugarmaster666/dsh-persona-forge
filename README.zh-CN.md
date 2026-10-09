@@ -152,7 +152,11 @@ dsh plugin --profile web remove dsh-persona-forge
 
 用 🎭 菜单里的「打开角色卡目录」，或设置页，都能到达那里。你也可以完全在**设置 → 角色扮演**里创建和编辑卡片，那会写出同样的文件。
 
-首次运行时，内置卡会**复制一份到你的角色卡目录**，让这个文件夹一开始就有内容可用。副本会遮蔽同 id 的内置卡，所以插件会记录自己写入了什么：**你没动过的副本**会随插件升级一起更新；**你编辑过的副本**永远不会被覆盖。如果某张卡停留在旧版本（包括更早版本播种的、没有记录的副本），设置页提供**「还原为内置」**一键替换成当前内置版本。
+首次运行时，内置卡会**复制一份到你的角色卡目录**，让这个文件夹一开始就有内容可用。副本会遮蔽同 id 的内置卡，所以插件会记录自己写入了什么：**你没动过的副本**会随插件升级一起更新；**你编辑过的副本**永远不会被覆盖。
+
+想知道**哪些卡偏离了内置版本**，在设置页点 **「检查是否有改动」**。它一次比完所有卡，**只有真正不一致的**才会在那一行出现「还原为内置」。
+
+比对是**按内容**而不是按字节——内置卡是带注释的手写 YAML，你的副本是重新序列化过的，逐字节比会把每一张没动过的卡都误报成「已修改」。
 
 ### 卡片格式
 
@@ -238,6 +242,8 @@ examplesByIntensity:
 | `/persona-forge/rewrite` | `{ cardId, text, sessionId?, intensity? }` | `{ text, provider, model, mode, cardId, fidelity, intensity, elapsedMs, factCheck }` |
 | `/persona-forge/cards/save` | `{ card }` | `{ id, path }` |
 | `/persona-forge/cards/delete` | `{ id }` | `{ removed }` |
+| `/persona-forge/cards/reset` | `{ id }` | `{ id }` —— 用内置版本覆盖该用户卡 |
+| `/persona-forge/cards/diff` | `{}` | `{ rows: [{ id, name, bundledName, changed }] }` —— 只列出有差异的卡 |
 | `/persona-forge/reveal` | `{}` | `{ directory, opened }` |
 
 失败返回 `{ ok: false, error: { code, message?, params? } }`，`code` 取值：`rejected`、`no-card`、`unconfigured`、`timeout`、`upstream`、`internal`、`forbidden`、`method`、`not-found`。

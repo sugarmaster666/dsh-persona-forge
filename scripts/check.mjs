@@ -338,9 +338,23 @@ check(
   clientSource.includes(`const PREFIX = '${PREFIX}'`),
   `host PREFIX=${PREFIX}; client does not declare it identically`,
 )
-for (const route of ['/cards', '/rewrite', '/cards/save', '/cards/delete', '/cards/reset', '/reveal']) {
+for (const route of ['/cards', '/rewrite', '/cards/save', '/cards/delete', '/cards/reset', '/cards/diff', '/reveal']) {
   check(`client calls ${route}`, clientSource.includes(`\${PREFIX}${route}`), route)
 }
+
+// The drift check is an explicit action, and the restore button follows its
+// result — never a bare per-card flag, which would put a restore action on
+// every seeded row and make a long card list unusable.
+check(
+  'the client has an explicit drift check',
+  clientSource.includes('diffCards()') && clientSource.includes("t('settings.check')"),
+  'the check must be a user action',
+)
+check(
+  'restore is gated on the drift result',
+  clientSource.includes('driftedIds.has(card.id)') && !clientSource.includes('card.shadowsBuiltin === true'),
+  'a permanent per-row restore button is the noise the check exists to avoid',
+)
 
 // The rewrite is triggered by the composer's OWN send gesture (button or
 // Enter), so the menu carries no separate run action. What the menu must

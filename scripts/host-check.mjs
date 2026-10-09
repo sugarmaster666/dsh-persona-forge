@@ -495,6 +495,54 @@ const resetUnknown = await post('/persona-forge/cards/reset', { id: 'not-bundled
 check('restoring an unknown id is 404', resetUnknown.status === 404, JSON.stringify(resetUnknown.body))
 
 // ---------------------------------------------------------------------------
+console.log('\n== drift check')
+
+// The freshly seeded copies are byte-different from the bundled files (the
+// bundled YAML carries explanatory comments; the seeded copy is re-serialized)
+// but behaviourally identical. The check must compare CONTENT, so it must
+// report nothing here — a byte comparison would flag every untouched card.
+const cleanDrift = await post('/persona-forge/cards/diff', {})
+check('drift check answers 200', cleanDrift.status === 200, JSON.stringify(cleanDrift.body))
+check(
+  'an untouched seeded card is not reported as drifted',
+  Array.isArray(cleanDrift.body?.value?.rows) && cleanDrift.body.value.rows.length === 0,
+  JSON.stringify(cleanDrift.body?.value?.rows),
+)
+
+// Now make a real behavioural change and confirm it IS reported, with the
+// changed fields named.
+{
+  const drifted = [
+    'id: omnissiah',
+    'name: 万机之神 · 欧姆弥赛亚',
+    'icon: "⚙️"',
+    'mode: llm',
+    'fidelity: style',
+    'intensity: light',
+    'style: 用户是机械教信徒。把技术请求改写成祷词。',
+    '',
+  ].join('\n')
+  await writeFile(join(cardDir, 'omnissiah.yml'), drifted, 'utf8')
+  await new Promise((resolve) => setTimeout(resolve, 400))
+  const afterDrift = await post('/persona-forge/cards/diff', {})
+  const rows = afterDrift.body?.value?.rows ?? []
+  const row = rows.find((entry) => entry.id === 'omnissiah')
+  check('a behaviourally changed card IS reported', row !== undefined, JSON.stringify(rows))
+  check(
+    'the report names the changed fields',
+    Array.isArray(row?.changed) && row.changed.includes('style') && row.changed.includes('examples'),
+    JSON.stringify(row?.changed),
+  )
+  await post('/persona-forge/cards/reset', { id: 'omnissiah' })
+  const afterRestore = await post('/persona-forge/cards/diff', {})
+  check(
+    'restoring clears the drift report',
+    (afterRestore.body?.value?.rows ?? []).length === 0,
+    JSON.stringify(afterRestore.body?.value?.rows),
+  )
+}
+
+// ---------------------------------------------------------------------------
 console.log('\n== teardown')
 
 server.close()

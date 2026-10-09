@@ -8,6 +8,35 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 Nothing yet.
 
+## [0.2.1] - 2026-10-09
+
+### Added
+
+- **Check for changes**, in the character-card manager. It compares every user
+  card against the bundled card of the same id and reports only the ones that
+  actually differ; only a drifted card grows a **Restore bundled** action on its
+  row. The alternative — a restore button on every user card — turns a long list
+  into noise, and "restore" on a card that never changed is a no-op nobody
+  asked for.
+- The drift report names the differing fields (`style`, `examples`, …).
+
+### Fixed
+
+- **The card row's description overlapped the buttons.** `.pf-card-desc` is a
+  `<span>`, and `overflow: hidden` / `text-overflow: ellipsis` do not apply to
+  inline elements, so a long description — such as the bundled 硬邦邦 card's —
+  spilled out of the card instead of being clipped. The body is now a flex
+  column, which blockifies its children, and the description is clamped to two
+  lines. The row's actions are `flex: none`, so the description yields rather
+  than the buttons.
+
+### Changed
+
+- The drift comparison is by **content, not bytes**. Bundled cards are
+  hand-written YAML carrying comments, while a saved card round-trips through
+  the store's serializer and loses them, so a byte comparison reported every
+  untouched seeded card as modified.
+
 ## [0.2.0] - 2026-10-09
 
 ### Added
@@ -179,7 +208,8 @@ First public release.
   tools, and never enters the session log. What the session records is the text
   the user actually sent.
 
-[Unreleased]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.2.1...HEAD
+[0.2.1]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.1.2...v0.2.0
 [0.1.2]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.1.0...v0.1.1

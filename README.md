@@ -210,9 +210,14 @@ On first run the bundled cards are **copied into your card directory** so the
 folder is a usable starting point. A copy shadows the bundled card of the same
 id, so the store tracks what it wrote: a copy you never touched is refreshed
 when a plugin update improves it, while a copy you edited is never written over.
-If a card was frozen at an older version — including copies seeded by releases
-that predate that tracking — the settings page offers **Restore bundled** to
-replace it with the current bundled version in one click.
+
+To see **which cards have drifted** from the bundled version, press **Check for
+changes** in the settings page. It compares every card at once, and only a card
+that actually differs grows a **Restore bundled** action on its row.
+
+The comparison is by **content, not bytes**: the bundled cards are hand-written
+YAML with comments, while your copies have been re-serialized, so a byte
+comparison would report every untouched card as modified.
 
 ### Card format
 
@@ -317,6 +322,8 @@ refused). Mounted under `/persona-forge`.
 | `/persona-forge/rewrite` | `{ cardId, text, sessionId?, intensity? }` | `{ text, provider, model, mode, cardId, fidelity, intensity, elapsedMs, factCheck }` |
 | `/persona-forge/cards/save` | `{ card }` | `{ id, path }` |
 | `/persona-forge/cards/delete` | `{ id }` | `{ removed }` |
+| `/persona-forge/cards/reset` | `{ id }` | `{ id }` — replaces the user card with the bundled one |
+| `/persona-forge/cards/diff` | `{}` | `{ rows: [{ id, name, bundledName, changed }] }` — only cards that differ |
 | `/persona-forge/reveal` | `{}` | `{ directory, opened }` |
 
 Failures use `{ ok: false, error: { code, message?, params? } }` with codes
