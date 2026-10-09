@@ -305,7 +305,22 @@ check('system prompt states the speaker direction', sentSystem.includes('USER'),
 check('system prompt carries the preservation rules', sentSystem.includes('Preserve the technical content EXACTLY'))
 check('system prompt carries the conversion examples', sentSystem.includes('Conversion examples'))
 check('the draft is framed, not inlined raw', String(llm.calls[0]?.messages?.[0]?.content?.[0]?.text ?? '').includes('<draft>'))
-check('the rewrite call carries no reasoningEffort override', llm.calls[0]?.reasoningEffort === undefined, String(llm.calls[0]?.reasoningEffort))
+// The rewrite must send NO reasoningEffort at all, on any route.
+//
+// The harness throws UNSUPPORTED_REASONING_EFFORT for any PRESENT value when
+// the route's model declares no reasoning metadata — including '', which is the
+// host's own "Provider default" sentinel in the ACP session-config layer.
+// `workbuddy-xdpool` / `hy4-preview` is such a route: pinning 'low' there broke
+// every rewrite outright. Absence is the only portable "use the default".
+const rewriteEffort = llm.calls[0]?.reasoningEffort
+check('the rewrite call sends no reasoningEffort', rewriteEffort === undefined, String(rewriteEffort))
+// Guards the shape of the fix, not just today's value: a rewrite also passes
+// through routes (e.g. template mode) that must not grow this field either.
+check(
+  'no rewrite call names a reasoning effort',
+  llm.calls.every((call) => call.reasoningEffort === undefined),
+  JSON.stringify(llm.calls.map((call) => call.reasoningEffort)),
+)
 check('the rewrite call creates no session turn', llm.calls[0]?.sessionId === undefined, String(llm.calls[0]?.sessionId))
 
 // ---------------------------------------------------------------------------
