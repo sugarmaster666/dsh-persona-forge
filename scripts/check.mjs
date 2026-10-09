@@ -577,6 +577,55 @@ check(
   'sending the rewrite itself must still be recognised as already rewritten',
 )
 
+// The composer menu is a CHARACTER PICKER first. Per-session overrides of a
+// card's own declaration are set once and then forgotten, so they must not sit
+// flat beside the picker giving it five equal-weight rows and 248 characters of
+// permanent explanation.
+check(
+  'advanced settings are folded away',
+  clientSource.includes('pf-more') && clientSource.includes('setAdvancedOpen'),
+  'the menu should not present overrides as equal-weight controls',
+)
+check(
+  'the fold starts closed',
+  /const \[advancedOpen, setAdvancedOpen\] = useState\(false\)/.test(clientSource),
+  'an open fold by default defeats the point',
+)
+check(
+  'the folded row still reports what is overridden',
+  clientSource.includes('control.more.custom') && clientSource.includes('advancedSummary'),
+  'a folded-away choice the user forgot about is a surprise waiting to happen',
+)
+// A control that cannot do anything should not be on screen. On a voice-only
+// card both fidelity options resolve identically, so the row is only rendered
+// for cards that actually have something to narrow.
+check(
+  'fidelity is only offered when the card may add constraints',
+  /selected\?\.fidelity === 'strategy'\s*\n\s*\? \[/.test(clientSource),
+  'on a style card both options are the same thing — that row is a fake choice',
+)
+// "No persona" is an exit action; listing it first made it the first thing read
+// in a menu whose whole point is choosing a character.
+check(
+  '"no persona" is last, after the cards',
+  clientSource.indexOf('onClick: () => pickCard(OFF)') > clientSource.indexOf('onClick: () => pickCard(card.id)'),
+  'an exit action should not precede the choices',
+)
+// Dead dictionary keys are unfinished intent: they promise an entry the UI does
+// not render.
+check(
+  'no dead "manage cards" key remains',
+  !clientSource.includes("'control.menu.manage'"),
+  'that slot cannot open settings, so the key only pretends there is a path',
+)
+// The model check is a one-time cost decision, so it belongs in the settings
+// page as a global preference — not re-decided on the way to every send.
+check(
+  'the model check is a global preference, not per session',
+  clientSource.includes('writeModelCheckPref') && !clientSource.includes('modelCheckKey'),
+  'a per-session switch asks the same question on every send',
+)
+
 // Four intensity rungs. A jump from medium straight to zealot left no way to
 // ask for a strong voice that is not yet full ritual.
 check(
