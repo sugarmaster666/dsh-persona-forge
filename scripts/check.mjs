@@ -618,12 +618,21 @@ check(
   !clientSource.includes("'control.menu.manage'"),
   'that slot cannot open settings, so the key only pretends there is a path',
 )
-// The model check is a one-time cost decision, so it belongs in the settings
-// page as a global preference — not re-decided on the way to every send.
+// The model check is OFF by default and controlled by the plugin row's config
+// alone. A client-side toggle for it would be a second setting for the same
+// thing, and it sits on the settings page -- which is about CARDS -- asking a
+// cost question on every visit.
 check(
-  'the model check is a global preference, not per session',
-  clientSource.includes('writeModelCheckPref') && !clientSource.includes('modelCheckKey'),
-  'a per-session switch asks the same question on every send',
+  'the model check has no client-side toggle',
+  !clientSource.includes('writeModelCheckPref') && !clientSource.includes("'settings.modelCheck'"),
+  'one setting should have one place: the plugin row config',
+)
+// The waiting panel must show progress. A "改写中" with no sense of time reads
+// as FROZEN -- the user cannot tell "working" from "hung".
+check(
+  'the waiting panel shows elapsed seconds',
+  clientSource.includes('panel.startedAt') && clientSource.includes('pf-elapsed'),
+  'a rewrite waiting on a slow model must not read as frozen',
 )
 
 // Four intensity rungs. A jump from medium straight to zealot left no way to
