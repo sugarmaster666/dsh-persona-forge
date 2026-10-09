@@ -46,12 +46,36 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- **The composer menu is a picker again, not a settings form.** It had grown to
+  five equal-weight segmented rows plus 248 characters of permanently visible
+  explanation, so picking a character meant scanning past four configuration
+  rows every time. It is now two layers: card list, intensity and send mode
+  always visible; **rewrite mode and fidelity** — per-session overrides of a
+  card's own declaration — folded behind "More settings", shut by default. The
+  collapsed row still names anything overridden, so a hidden choice cannot
+  surprise the user later. Measured: 5 rows + 248 hint chars → 2 rows + 0
+  permanent hint chars.
+
+- **Fidelity is only offered when the card may add behavioural constraints.** On
+  a voice-only card both options resolve identically, so the row was a control
+  that could not do anything, paired with a paragraph explaining why the thing
+  you would want was refused. It is now absent on `style` cards.
+
+- **The model check moved to the settings page** as a global preference rather
+  than a per-session switch in the composer menu. It answers "do I want to pay
+  for the second call", which is decided once, not re-asked on the way to every
+  send.
+
+- "No persona" moved to the end of the card list: it is an exit action, and
+  listing it first made it the first thing read in a menu whose point is choosing
+  a character.
+
 - **The model-based preservation check is now off by default** and switchable
-  from the menu. It is the only thing that can see a requirement reworded weaker,
-  or a constraint added in prose — but it costs a second model call on **every**
-  send, and the new local check already proves the common and most damaging
-  failure for free. `factCheck` in the plugin config now sets that default, and
-  only an explicit `true` enables it.
+  from the settings page. It is the only thing that can see a requirement
+  reworded weaker, or a constraint added in prose — but it costs a second model
+  call on **every** send, and the new local check already proves the common and
+  most damaging failure for free. `factCheck` in the plugin config now sets that
+  default, and only an explicit `true` enables it.
 
 - The Chinese README is the primary `README.md` and the English one is
   `README.en.md`, so GitHub, npm and the repository landing page open in Chinese,
@@ -81,6 +105,15 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   and changed nothing. Delete is now shown only where it does something, and the
   confirmation for an edited bundled card says that its changes are discarded
   and the bundled version returns.
+
+- **A cancelled rewrite could not be retried.** `lastRewrite` was written on
+  every successful rewrite and never removed, so that the send gesture could
+  tell "the rewrite is already in the composer" from "not rewritten yet".
+  Restoring the original put the draft text back but left that memory in place,
+  so the next send matched "already rewritten" and the plugin silently let the
+  raw text through. Restoring is a rewind, not a reviewed result, so it now
+  deletes the entry — conditionally on putting back the original, because
+  sending the rewrite itself must still count as already rewritten.
 
 - **A narrowed fidelity never reached the model.** The route computed the
   narrowed value and reported it in the response, but `buildSystemPrompt` read

@@ -126,22 +126,15 @@ you want them gone.
 
 ## Use
 
-1. Click 🎭 in the composer tool row and pick a character. **No persona** in the
-   same menu turns rewriting off — that is the state the control starts in, and
-   your choice is remembered per session.
-2. Set **intensity, rewrite mode, fidelity, model check** and **send mode**:
+1. Click 🎭 in the composer tool row and pick a character. **No persona**, at the
+   end of the same list, turns rewriting off — that is the state the control
+   starts in, and your choice is remembered per session.
+2. Set **intensity** and **send mode**:
    - Intensity is a four-rung ladder: **Light · Medium · Strong · Zealot**
      (轻 · 中 · 重 · 狂热). Light adds a touch of flavour; Medium is clear but not
      dominant; Strong gives the voice real weight while keeping the request the
      first thing the reader sees; Zealot is ritual throughout. A card carries
      its own default, and this choice overrides it for your session.
-   - **Rewrite mode**: Card default / Model rewrite / Template. A temporary
-     switch applies to this session only; if the card has no content for the
-     mode you picked (no `style`, or no `template`), the override is ignored and
-     falls back to the card's own mode.
-   - **Fidelity**: Card default / Voice only. **Narrowing only, never widening**
-     — see below.
-   - **Model check**: on / off — see *The preservation check* below.
    - **Review first** — the rewrite appears in the comparison panel below the
      composer; you read it and then press Send there. Your draft is untouched
      until you confirm.
@@ -150,6 +143,12 @@ you want them gone.
      sent message cannot be recalled.
 3. With a character selected, the composer's normal **Send** button — or
    **Enter** — *is* the rewrite trigger.
+
+**More settings**, at the bottom of the menu, is folded shut by default. It holds
+**rewrite mode** and **fidelity** — per-session OVERRIDES of a card's own
+declaration that most people set once and never touch, so they do not take space
+in a menu whose job is choosing a character. When something *is* overridden, the
+collapsed row names it, so a choice you forgot about cannot hide behind the fold.
 
 The rewrite runs **once per draft**: after a rewrite lands, sending goes through
 as-is instead of rewriting the output again. Editing the draft re-arms it.
@@ -214,10 +213,11 @@ is already proven for free by layer 1, so paying a model call on every send to
 re-check it is a waste. Turn it on when the drafts are technical enough to
 warrant it.
 
-The 🎭 menu has **Model check: on / off**, remembered per session. With it off
-the panel states plainly that the local check ran and spent no tokens, and says
-what that check does **not** cover — a narrow verdict has to declare its own
-limits.
+The switch lives in **Settings → Persona** ("Enable the model check") and is a
+global preference: it answers "do I want to pay for the second call", which is
+decided once rather than re-asked on the way to every send. With it off the panel
+states plainly that the local check ran and spent no tokens, and says what that
+check does **not** cover — a narrow verdict has to declare its own limits.
 
 Both layers are **advisory** and never block a rewrite: they annotate, not stop.
 
@@ -384,9 +384,12 @@ ever narrowed, never widened:**
   author's decision, not something to grant with a click on the way to Send. To
   widen, edit the card.
 
-The 🎭 menu's *Fidelity* defaults to **Card default**; on a `style` card the hint
-says it cannot be widened here. The server enforces the same rule, so the UI
-never offers a control it would ignore.
+The control appears under *More settings*, and **only when the card is
+`strategy`**. On a `style` card it is not rendered at all: both options would
+resolve identically there, and showing a control that cannot do anything — plus a
+paragraph explaining why the other one is refused — is worse than showing
+nothing. The server enforces the same rule, so the UI never offers a control it
+would ignore.
 
 ### `mode: template`
 
