@@ -13,6 +13,54 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   Chinese, with a language switch at the top of each file. The npm package
   description is Chinese for the same reason.
 
+## [0.3.0] - 2026-10-09
+
+### Added
+
+- **AI 代填（AI draft）**, in the character-card manager. Describe the character
+  in a sentence — "a grumpy but utterly reliable old lighthouse keeper" — and the
+  model writes the whole card: the style text, a name, an icon, a description and
+  the conversion examples for all four intensity levels. It runs on the session's
+  own model, like the rewrite does, so there is still only one model to think
+  about.
+
+  The result **only prefills the form**. Nothing is written to the card directory
+  until the user reviews it and presses Save, so a generation the user dislikes
+  costs one reload — the same review discipline the rewrite panel enforces. The
+  generated card is also passed through the very same validator the save path
+  uses, so this route cannot hand the form a card that cannot be saved.
+
+- The card form now edits the **per-intensity examples**. They were part of the
+  card but invisible in the UI, which is what made the bug below possible.
+
+### Fixed
+
+- **Editing a card silently destroyed its per-intensity examples.** The form did
+  not carry `examplesByIntensity`, so pressing Save on any card rebuilt it
+  without the four demonstration sets and the card fell back to its flat
+  `examples` list. Renaming a bundled card was enough to lose all four intensity
+  sets. The form now shows and round-trips them.
+
+- **Every bundled card was labelled 自定义 (custom).** Bundled cards are seeded
+  into the user card directory as editable starting points, so the tag was
+  derived from "does a user file exist for this id" — true for cards nobody had
+  ever touched. The row tag now reports real provenance, with a new **已修改
+  (edited)** state for a bundled card the user has changed, and it is computed
+  with the same semantic comparison the drift check uses, so the tag and the
+  check's verdict now agree **by construction** instead of contradicting each
+  other on the same screen.
+
+- **Delete was offered where it could not take effect.** A card whose content
+  still matches the bundle has no user-owned file: removing it cleared a seeded
+  copy that the next start wrote straight back, so the button reported success
+  and changed nothing. Delete is now shown only where it does something, and the
+  confirmation for an edited bundled card says that its changes are discarded
+  and the bundled version returns.
+
+- Three examples in the bundled 肌肉集团 · 硬邦邦 card dropped the word "bug"
+  from their input. The self-check now verifies the per-intensity examples too,
+  not just the flat list, which is what surfaced them.
+
 ## [0.2.1] - 2026-10-09
 
 ### Added
@@ -213,7 +261,8 @@ First public release.
   tools, and never enters the session log. What the session records is the text
   the user actually sent.
 
-[Unreleased]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.2.1...HEAD
+[Unreleased]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.2.1...v0.3.0
 [0.2.1]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.1.2...v0.2.0
 [0.1.2]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.1.1...v0.1.2

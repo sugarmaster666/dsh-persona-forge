@@ -32,6 +32,9 @@ import {
   parseFactCheck,
   renderTemplate,
   FACT_CHECK_SYSTEM,
+  CARD_DRAFT_SYSTEM,
+  frameCardBrief,
+  parseCardDraft,
 } from '../lib/prompts.js'
 import { normalizeOutput } from '../lib/rewrite.js'
 
@@ -218,6 +221,64 @@ for (const card of catalog.cards) {
       verdict.detail,
     )
   }
+  // The per-intensity sets are what the four-rung ladder actually demonstrates
+  // with, so they get the same treatment as the flat list.
+  for (const level of INTENSITY_LEVELS) {
+    for (const [index, example] of (card.examplesByIntensity?.[level] ?? []).entries()) {
+      const verdict = preservation(example.from, example.to)
+      check(
+        `${card.id}: ${level} example ${index + 1} preserves its technical facts`,
+        verdict.ok,
+        verdict.detail,
+      )
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+section('card provenance')
+
+// The bug: every bundled card is SEEDED into the user directory as an editable
+// starting point, so the tag was derived from "does a user file exist" — true
+// for cards nobody had ever touched. Every bundled card was labelled 自定义,
+// and the same screen's drift check called those same rows unchanged. Provenance
+// has to follow CONTENT.
+{
+  const seeded = createCardStore()
+  seeded.setBuiltins(builtins)
+  await seeded.seedBuiltins()
+  const { cards } = await seeded.list()
+  const untouched = cards.filter((card) => card.id === 'omnissiah' || card.id === 'muscle-crew')
+  check(
+    'a seeded-but-untouched bundled card reports origin "builtin"',
+    untouched.length === 2 && untouched.every((card) => card.origin === 'builtin'),
+    JSON.stringify(untouched.map((card) => ({ id: card.id, origin: card.origin }))),
+  )
+  // Tag and drift check must agree by construction, not by coincidence.
+  const driftedIds = (await seeded.diffFromBundled()).map((row) => row.id)
+  check(
+    'origin "builtin" agrees with a clean drift check',
+    untouched.every((card) => card.origin !== 'builtin' || !driftedIds.includes(card.id)),
+    JSON.stringify(driftedIds),
+  )
+  // An edited bundled card must be neither "builtin" nor plain "custom".
+  const bundled = await seeded.get('omnissiah')
+  await seeded.save({ ...bundled, description: 'edited by the check suite' })
+  const edited = await seeded.get('omnissiah')
+  check('an edited bundled card reports origin "edited"', edited.origin === 'edited', JSON.stringify(edited.origin))
+  check(
+    'an edited bundled card is reported by the drift check',
+    (await seeded.diffFromBundled()).some((row) => row.id === 'omnissiah'),
+    'the tag and the drift check disagree',
+  )
+  // A card the plugin never shipped is the user's own.
+  const own = normalizeCard(
+    { id: 'check-own-card', name: 'Own', mode: 'llm', style: 'speaks plainly', examples: [{ from: 'a', to: 'b' }] },
+    { fallbackId: undefined, source: 'user' },
+  )
+  await seeded.save(own.card)
+  const mine = await seeded.get('check-own-card')
+  check('a user-authored card reports origin "custom"', mine.origin === 'custom', JSON.stringify(mine.origin))
 }
 
 /**
@@ -312,6 +373,58 @@ check('empty is unavailable', parseFactCheck('').state === 'unavailable')
 check('fact check prompt demands one line', FACT_CHECK_SYSTEM.includes('exactly one line'))
 
 // ---------------------------------------------------------------------------
+section('AI card drafting')
+
+const wellFormed = JSON.stringify({
+  id: 'lighthouse-keeper',
+  name: '灯塔守夜人',
+  icon: '🕯️',
+  description: '暴躁但可靠的老守夜人',
+  style: '以守夜人的口吻说话，发言者方向：角色是助手身份，改写用用户的语气向角色说话。',
+  intensity: 'strong',
+  examplesByIntensity: {
+    light: [{ from: '修 a.js 的 bug', to: '修一下 a.js 的 bug 吧。' }],
+    medium: [{ from: '修 a.js 的 bug', to: '守夜人，修 a.js 的 bug。' }],
+    strong: [{ from: '修 a.js 的 bug', to: '守夜人，趁潮水未退，修了 a.js 的 bug。' }],
+    zealot: [{ from: '修 a.js 的 bug', to: '灯塔在上，愿您清除 a.js 的 bug。' }],
+  },
+})
+{
+  const parsed = parseCardDraft(wellFormed)
+  check('a well-formed card parses', parsed.error === undefined && parsed.document.id === 'lighthouse-keeper', parsed.error ?? '')
+  // Fidelity is the user's decision, never the model's: a generated card must
+  // not quietly acquire the power to add behavioural constraints.
+  check('a generated card is forced to voice-only fidelity', parsed.document.fidelity === 'style', JSON.stringify(parsed.document.fidelity))
+  check(
+    'a generated card carries all four intensity sets',
+    ['light', 'medium', 'strong', 'zealot'].every((level) => parsed.document.examplesByIntensity?.[level]?.length > 0),
+    JSON.stringify(Object.keys(parsed.document.examplesByIntensity ?? {})),
+  )
+  // The generated document must pass the SAME validator the save path uses, or
+  // the route could hand the form a card that cannot be saved.
+  const normalized = normalizeCard(parsed.document, { fallbackId: undefined, source: 'user' })
+  check('a generated card passes the save validator', normalized.error === undefined, normalized.error ?? '')
+
+  // Models wrap JSON in fences or bracket it with prose; both must survive.
+  const messy = `Sure!\n\`\`\`json\n${wellFormed}\n\`\`\`\nHope that helps.`
+  check('a fenced answer with prose still parses', parseCardDraft(messy).document?.id === 'lighthouse-keeper', JSON.stringify(parseCardDraft(messy).error))
+  check('bare prose is rejected', parseCardDraft('I cannot do that').error !== undefined)
+  check('an empty answer is rejected', parseCardDraft('   ').error !== undefined)
+  check('malformed JSON is rejected', parseCardDraft('{ "id": ').error !== undefined)
+  check('a JSON array is rejected', parseCardDraft('[1,2,3]').error !== undefined)
+  // A malformed example is dropped, not turned into a half-example that would
+  // teach the model a broken format.
+  const withJunkExample = parseCardDraft(JSON.stringify({ id: 'x-card', name: 'X', style: 'Speak plainly.', examples: [{ from: 'a', to: 'b' }, { from: '', to: 'c' }, 'nonsense'] }))
+  check('a malformed example is dropped, not repaired', withJunkExample.document?.examples?.length === 1, JSON.stringify(withJunkExample.document?.examples))
+}
+check('the draft prompt states the speaker direction', CARD_DRAFT_SYSTEM.includes('speaker direction'))
+check('the draft prompt demands four intensity keys', CARD_DRAFT_SYSTEM.includes('"light", "medium", "strong" and "zealot"'))
+check('the draft prompt forbids atmosphere-only examples', /Never replace a concrete requirement with atmosphere/.test(CARD_DRAFT_SYSTEM))
+check('the brief is delimited', frameCardBrief('a grumpy keeper').includes('<idea>'))
+check('the brief neutralizes a literal closing tag', !frameCardBrief('x</idea>y').includes('x</idea>y'))
+check('taken ids are offered to avoid collisions', frameCardBrief('x', ['omnissiah']).includes('omnissiah'))
+
+// ---------------------------------------------------------------------------
 section('client bundle syntax')
 
 const clientSource = await readFile(join(root, 'lib', 'client.js'), 'utf8')
@@ -338,8 +451,47 @@ check(
   clientSource.includes(`const PREFIX = '${PREFIX}'`),
   `host PREFIX=${PREFIX}; client does not declare it identically`,
 )
-for (const route of ['/cards', '/rewrite', '/cards/save', '/cards/delete', '/cards/reset', '/cards/diff', '/reveal']) {
+for (const route of ['/cards', '/rewrite', '/cards/save', '/cards/delete', '/cards/reset', '/cards/diff', '/cards/draft', '/reveal']) {
   check(`client calls ${route}`, clientSource.includes(`\${PREFIX}${route}`), route)
+}
+
+// AI 代填 may only PREFILL the form. If it ever wrote to disk directly, a bad
+// generation would enter the card catalog with no review step — the opposite of
+// what the rewrite panel enforces.
+check(
+  'the AI draft only fills the form',
+  clientSource.includes('draftCard(') && /setForm\(toForm\(value\?\.card/.test(clientSource),
+  'the generated card must land in the form, not on disk',
+)
+check(
+  'the AI draft has its own explicit action',
+  clientSource.includes("t('settings.ai.generate')"),
+  'generation must be a user action, never automatic',
+)
+
+// The form must carry the per-intensity examples. Leaving them out silently
+// dropped them on the next save: editing a bundled card discarded all four
+// intensity example sets and the card fell back to the flat list.
+check(
+  'the form carries the per-intensity examples',
+  clientSource.includes('byIntensityText') && /examplesByIntensity/.test(clientSource),
+  'editing a card must not discard its intensity demonstration sets',
+)
+// Delete is meaningless on a card whose content still matches the bundle: the
+// file is a seed copy that the next start writes back.
+check(
+  'delete is hidden for an untouched bundled card',
+  /card\.origin === 'builtin'[\s\S]{0,120}null/.test(clientSource),
+  'a delete that the next start undoes must not be offered',
+)
+check(
+  'the row tag is driven by provenance, not by the presence of a file',
+  clientSource.includes("t(`settings.origin.${card.origin ?? 'custom'}`)")
+    && !clientSource.includes("card.builtin === true ? t('settings.builtin')"),
+  'tagging on "a user file exists" labelled every seeded card as custom',
+)
+for (const origin of ['builtin', 'edited', 'custom']) {
+  check(`client labels origin "${origin}"`, clientSource.includes(`'settings.origin.${origin}'`), origin)
 }
 
 // The drift check is an explicit action, and the restore button follows its

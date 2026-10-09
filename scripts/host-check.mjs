@@ -82,12 +82,17 @@ function makeContext(services) {
 /** A stub llm service that answers with a fixed persona rewrite. */
 function makeLlm(answer, options = {}) {
   const calls = []
+  let reply = answer
   return {
     calls,
+    /** Swap the next answer, so one context can cover several call shapes. */
+    setAnswer(next) {
+      reply = next
+    },
     stream(generate) {
       calls.push(generate)
       if (options.throwOnCall === true) throw new Error('llm unavailable')
-      const text = options.echoSystem === true ? `${answer}` : answer
+      const text = options.echoSystem === true ? `${reply}` : reply
       return (async function* generate_() {
         yield { type: 'block-start', index: 0, blockType: 'text' }
         yield { type: 'text-delta', index: 0, text }
@@ -540,6 +545,78 @@ check(
     (afterRestore.body?.value?.rows ?? []).length === 0,
     JSON.stringify(afterRestore.body?.value?.rows),
   )
+}
+
+// ---------------------------------------------------------------------------
+console.log('\n== AI card drafting')
+
+// The route runs on the session's own model, exactly like the rewrite does.
+const draftedCard = JSON.stringify({
+  id: 'host-check-drafted',
+  name: '守夜人',
+  icon: '🕯️',
+  description: '暴躁但可靠的老守夜人',
+  style: '以守夜人的口吻说话。发言者方向：角色是助手身份，改写用用户的语气向角色说话。',
+  intensity: 'strong',
+  examplesByIntensity: {
+    light: [{ from: '修 a.js 的 bug', to: '修一下 a.js 的 bug 吧。' }],
+    medium: [{ from: '修 a.js 的 bug', to: '守夜人，修 a.js 的 bug。' }],
+    strong: [{ from: '修 a.js 的 bug', to: '守夜人，趁潮水未退，修了 a.js 的 bug。' }],
+    zealot: [{ from: '修 a.js 的 bug', to: '灯塔在上，愿您清除 a.js 的 bug。' }],
+  },
+})
+llm.setAnswer(draftedCard)
+{
+  const drafted = await post('/persona-forge/cards/draft', { brief: '一个暴躁但可靠的老灯塔守夜人', sessionId: 'session-1' })
+  check('the draft route answers 200', drafted.status === 200, JSON.stringify(drafted.body))
+  check('the draft names the model it used', drafted.body?.value?.model === 'stub-model', JSON.stringify(drafted.body?.value?.model))
+  check('the drafted card carries all four intensity sets',
+    ['light', 'medium', 'strong', 'zealot'].every((level) => drafted.body?.value?.card?.examplesByIntensity?.[level]?.length > 0),
+    JSON.stringify(Object.keys(drafted.body?.value?.card?.examplesByIntensity ?? {})))
+  check('the drafted card is voice-only', drafted.body?.value?.card?.fidelity === 'style', JSON.stringify(drafted.body?.value?.card?.fidelity))
+  // Crucially: a draft must NOT appear in the catalog. It is a prefill, and the
+  // user decides whether it ever becomes a card.
+  const afterDraft = await post('/persona-forge/cards', {})
+  check(
+    'a draft is not written to the catalog',
+    afterDraft.body?.value?.cards?.some((card) => card.id === 'host-check-drafted') === false,
+    JSON.stringify(afterDraft.body?.value?.cards?.map((card) => card.id)),
+  )
+  // The drafted card must be savable through the ordinary route, unchanged.
+  const saved = await post('/persona-forge/cards/save', { card: drafted.body.value.card })
+  check('a drafted card saves through the normal route', saved.status === 200, JSON.stringify(saved.body))
+  const reloaded = await post('/persona-forge/cards', {})
+  const stored = reloaded.body?.value?.cards?.find((card) => card.id === 'host-check-drafted')
+  check(
+    'the saved draft keeps every intensity set',
+    ['light', 'medium', 'strong', 'zealot'].every((level) => stored?.examplesByIntensity?.[level] !== undefined),
+    JSON.stringify(Object.keys(stored?.examplesByIntensity ?? {})),
+  )
+  await post('/persona-forge/cards/delete', { id: 'host-check-drafted' })
+}
+
+// An unparseable answer must fail loudly, never half-fill the form.
+llm.setAnswer('I am afraid I cannot help with that.')
+{
+  const junk = await post('/persona-forge/cards/draft', { brief: 'anything', sessionId: 'session-1' })
+  check('an unusable model answer is rejected', junk.status === 502, `${String(junk.status)} ${JSON.stringify(junk.body)}`)
+  check('the rejection explains itself', typeof junk.body?.error?.message === 'string' && junk.body.error.message.length > 0, JSON.stringify(junk.body?.error))
+}
+llm.setAnswer('万机之座在上，恳请您为我们编写一个快速排序算法，使重复之数各归其位。')
+
+// An empty brief is a client bug, not a model call.
+{
+  const empty = await post('/persona-forge/cards/draft', { brief: '   ', sessionId: 'session-1' })
+  check('an empty brief is rejected before any model call', empty.status === 422, JSON.stringify(empty.body))
+  const oversized = await post('/persona-forge/cards/draft', { brief: 'x'.repeat(4001), sessionId: 'session-1' })
+  check('an oversized brief is rejected', oversized.status === 422, JSON.stringify(oversized.body))
+}
+// No resolvable route means the same clear 409 the rewrite gives. The stub has
+// no `agentDefaultModel` service, so nothing can resolve a route here.
+{
+  const noRoute = await post('/persona-forge/cards/draft', { brief: 'a keeper', sessionId: 'unknown-session' })
+  check('a draft with no resolvable model is refused with 409', noRoute.status === 409, `status=${String(noRoute.status)} ${JSON.stringify(noRoute.body)}`)
+  check('the 409 says what to do', /send one message|default model/.test(noRoute.body?.error?.message ?? ''), JSON.stringify(noRoute.body?.error))
 }
 
 // ---------------------------------------------------------------------------

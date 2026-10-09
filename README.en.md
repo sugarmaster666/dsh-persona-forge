@@ -9,7 +9,7 @@ character's voice by the harness LLM before it is sent — following the model
 the session is already using. Choose whether the rewrite goes straight out or
 lands back in the composer for review.
 
-> **Status:** early (`0.2.x`). The card format and the HTTP contract are stable
+> **Status:** early (`0.3.x`). The card format and the HTTP contract are stable
 > enough to build on; expect additive changes and read the changelog before
 > upgrading.
 
@@ -221,6 +221,45 @@ The comparison is by **content, not bytes**: the bundled cards are hand-written
 YAML with comments, while your copies have been re-serialized, so a byte
 comparison would report every untouched card as modified.
 
+Each row's status tag states what the card **is right now**:
+
+| Tag | Meaning | Actions |
+|---|---|---|
+| **Built-in** | Identical to the version the plugin ships, even though a copy exists in your directory. | Edit, Restore |
+| **Edited** | A bundled card you have changed — it may no longer rewrite the way the bundled one does. | Edit, Restore, Delete |
+| **Custom** | Your own card; the plugin ships no card with this id. | Edit, Delete |
+
+A row tagged **Built-in** shows no Delete, because it has no content of yours to
+remove — that copy is written back on the next start.
+
+### AI draft
+
+Rather than writing a card from scratch, describe the character in a sentence in
+the settings page's **AI draft** box:
+
+> a grumpy but utterly reliable old lighthouse keeper who speaks in short
+> sentences and nautical metaphors
+
+The model fills in the whole card — the style text, a name, an icon, a
+description, and the **conversion examples for all four intensity levels**. Like
+the rewrite, it runs on the **model the current session uses**, so there is still
+only one model to think about.
+
+**The result only fills the form; it is never saved automatically.** Edit it and
+press Save, or regenerate if you dislike it — the cost is one call. A generated
+card also goes through **exactly the same validation as a hand-saved one**, so it
+cannot be a card that fails to save.
+
+Two things the plugin decides for you rather than leaving to the model:
+
+- **`fidelity` is pinned to `style` (voice only).** An automatically generated
+  card should not quietly acquire the power to add behavioural constraints to
+  your requests; switch it to `strategy` yourself in the form if you want that.
+- **Examples must carry their technical facts across.** The prompt requires every
+  file name, identifier, number and command in an example's `from` to appear in
+  its `to` — otherwise the model learns to replace requirements with atmosphere,
+  which is the exact failure this plugin exists to prevent.
+
 ### Card format
 
 ```yaml
@@ -326,6 +365,7 @@ refused). Mounted under `/persona-forge`.
 | `/persona-forge/cards/delete` | `{ id }` | `{ removed }` |
 | `/persona-forge/cards/reset` | `{ id }` | `{ id }` — replaces the user card with the bundled one |
 | `/persona-forge/cards/diff` | `{}` | `{ rows: [{ id, name, bundledName, changed }] }` — only cards that differ |
+| `/persona-forge/cards/draft` | `{ brief, sessionId? }` | `{ card, provider, model, elapsedMs }` — a draft only; nothing is written to disk |
 | `/persona-forge/reveal` | `{}` | `{ directory, opened }` |
 
 Failures use `{ ok: false, error: { code, message?, params? } }` with codes
