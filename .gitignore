@@ -1,0 +1,17 @@
+# Editor and OS noise
+.DS_Store
+Thumbs.db
+*.swp
+*~
+
+# Dependencies (the plugin itself ships none)
+node_modules/
+package-lock.json
+pnpm-lock.yaml
+yarn.lock
+
+# Local scratch
+*.log
+_probe/
+_ref/
+scripts/_*.mjs

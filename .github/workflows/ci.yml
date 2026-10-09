@@ -1,0 +1,66 @@
+# Runs both self-check suites on every push and pull request.
+#
+# The plugin has no dependencies and no build step, so this is the whole CI:
+# check out, run the suites. `check.mjs` covers the pure logic (the YAML reader
+# and its refusals, card normalization, the bundled cards' fact preservation,
+# prompt construction, the fact-check parser, client-bundle syntax);
+# `host-check.mjs` mounts the real plugin on a stub Cordis context and drives
+# the real HTTP routes over a real socket with a stubbed model.
+name: CI
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: check (node ${{ matrix.node }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # The floor is the manifest's `engines.node`; the ceiling tracks the
+        # runtime the plugin was developed against.
+        node: ['22', '24']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+      - name: Unit check
+        run: node scripts/check.mjs
+      - name: Host integration check
+        run: node scripts/host-check.mjs
+      - name: Verify the package manifest is publishable
+        run: |
+          node -e '
+            const fs = require("node:fs");
+            const pkg = JSON.parse(fs.readFileSync("package.json", "utf8"));
+            const problems = [];
+            for (const field of ["name", "version", "description", "license", "type", "exports", "dsh", "repository", "files"]) {
+              if (pkg[field] === undefined) problems.push(`missing "${field}"`);
+            }
+            if (pkg.dsh?.bundle?.patch === undefined) problems.push("dsh.bundle.patch is required for a bundle");
+            if (pkg.dsh?.client?.platform !== "web") problems.push("dsh.client.platform must be \"web\"");
+            for (const path of ["lib/index.js", "lib/client.js", pkg.dsh.bundle.patch]) {
+              if (!fs.existsSync(path)) problems.push(`declared file is missing: ${path}`);
+            }
+            if (problems.length > 0) { console.error(problems.join("\n")); process.exit(1); }
+            console.log("manifest OK:", pkg.name + "@" + pkg.version);
+          '
+      - name: Verify a git checkout needs no install step
+        run: |
+          # The plugin declares no dependencies, so a fresh clone must work with
+          # no install at all. This is the property that makes `github:` installs
+          # reliable, so it is asserted rather than assumed.
+          test ! -d node_modules
+          node -e 'import("./lib/index.js").then(m => {
+            if (typeof m.apply !== "function") throw new Error("host entry exports no apply()");
+            if (m.Config !== undefined) throw new Error("host entry must not export Config (the loader treats it as a schema)");
+            console.log("host entry OK");
+          })'

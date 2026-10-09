@@ -1,0 +1,75 @@
+{
+  "name": "dsh-persona-forge",
+  "version": "0.1.0",
+  "description": "Persona-style prompt rewriter for DeepSeek Harness: pick a character card in the composer, rewrite the draft into that character's voice through the harness LLM (following the session's own model), then send directly or review first. The original draft is always preserved.",
+  "type": "module",
+  "license": "MIT",
+  "engines": {
+    "node": ">=22"
+  },
+  "main": "lib/index.js",
+  "exports": {
+    ".": {
+      "default": "./lib/index.js"
+    },
+    "./client": {
+      "default": "./lib/client.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "inject": [
+        "@deepseek-ai/dsh-client-ui-conversation",
+        "@deepseek-ai/dsh-client-ui-slots",
+        "@deepseek-ai/dsh-client-locale",
+        "@deepseek-ai/dsh-client-ui-settings"
+      ]
+    }
+  },
+  "dependencies": {},
+  "files": [
+    "lib",
+    "cards",
+    "cordis.patch.yml",
+    "README.md",
+    "README.zh-CN.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
+  "keywords": [
+    "deepseek-harness",
+    "dsh",
+    "dsh-plugin",
+    "persona",
+    "roleplay",
+    "prompt",
+    "prompt-rewrite",
+    "prompt-engineering",
+    "character-card",
+    "persona-card",
+    "deepseek"
+  ],
+  "scripts": {
+    "check": "node scripts/check.mjs && node scripts/host-check.mjs",
+    "check:unit": "node scripts/check.mjs",
+    "check:host": "node scripts/host-check.mjs",
+    "prepublishOnly": "node scripts/check.mjs && node scripts/host-check.mjs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sugarmaster666/dsh-persona-forge.git"
+  },
+  "bugs": {
+    "url": "https://github.com/sugarmaster666/dsh-persona-forge/issues"
+  },
+  "homepage": "https://github.com/sugarmaster666/dsh-persona-forge#readme",
+  "author": "sugarmaster666",
+  "publishConfig": {
+    "access": "public"
+  }
+}

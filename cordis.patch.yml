@@ -1,0 +1,11 @@
+# dsh-persona-forge bundle patch — inserts one loader entry for the plugin
+# package. The node half (exports ".") runs in the host process and owns the
+# character-card store plus the /persona-forge host routes; the browser half
+# (declared by `dsh.client`, served from lib/client.js) adds the composer
+# persona control, the review panel, and the card manager settings page.
+#
+# Install with `plugin_manager` `action: install_bundle` and this directory as
+# the target. Do not hand-edit the profile's package.json or cordis.patch.yml.
+- insert:
+    - id: persona-forge
+      name: dsh-persona-forge

@@ -1,0 +1,13 @@
+# Normalize to LF in the repository. Windows checkouts still get CRLF in the
+# working tree, but the committed bytes are LF, so CI on Linux and any
+# `github:` install see identical files regardless of who contributed them.
+* text=auto eol=lf
+
+# Binary-ish assets, if any are ever added.
+*.png binary
+*.jpg binary
+*.webp binary
+*.ico binary
+
+# Keep the lockfile out of language stats even though the plugin ships none.
+pnpm-lock.yaml linguist-generated=true
