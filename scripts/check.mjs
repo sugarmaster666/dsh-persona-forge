@@ -562,6 +562,21 @@ check(
 )
 check('no hidden right-click-only trigger remains', !clientSource.includes('onContextMenu'), 'onContextMenu still present')
 
+// Restoring the original must REWIND the "already rewritten" memory, not keep
+// it. Otherwise a rewrite the user cancelled can never be retried: the next
+// send on the restored draft matches `previous.original === text` and the
+// plugin silently lets the raw text through.
+check(
+  'restoring the original forgets the rewrite',
+  /lastRewrite\.delete\(sessionKey\)/.test(clientSource),
+  'a cancelled rewrite would be impossible to retry',
+)
+check(
+  'the forget only fires when the ORIGINAL is put back',
+  /if \(text === panel\.original\) lastRewrite\.delete\(sessionKey\)/.test(clientSource),
+  'sending the rewrite itself must still be recognised as already rewritten',
+)
+
 // Four intensity rungs. A jump from medium straight to zealot left no way to
 // ask for a strong voice that is not yet full ritual.
 check(
