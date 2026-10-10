@@ -6,6 +6,28 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.3.4] - 2026-10-10
+
+### Fixed
+
+- **One wedged rewrite no longer freezes the plugin for good.** The review
+  panel is a single shared surface, but the guards around it were global while
+  the send interceptor guarded per session. A single rewrite left stuck at
+  `loading` therefore poisoned everything after it: `start()` hit its global
+  `busy` guard and **silently did nothing** — no rewrite, no error — while in
+  another session the interceptor let the gesture through to the native send.
+  Reported as "after it hangs, it just sends my text and the plugin never
+  intercepts again".
+
+  - `runRewrite` now refuses only a concurrent run for the **same** session, so
+    one wedged session cannot block another.
+  - `start()` guards on the **per-session** busy, matching `runRewrite` and the
+    interceptor. A send gesture is now either rewritten or sent; it is never
+    swallowed into nothing.
+  - A client-side watchdog settles the panel after 135s even if the host never
+    answers. The host's own deadline is not enough: this half must stay usable
+    without depending on the other half being alive.
+
 ## [0.3.3] - 2026-10-09
 
 ### Fixed
@@ -405,7 +427,8 @@ First public release.
   tools, and never enters the session log. What the session records is the text
   the user actually sent.
 
-[Unreleased]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.3.3...HEAD
+[Unreleased]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.3.4...HEAD
+[0.3.4]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.3.3...v0.3.4
 [0.3.3]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.3.2...v0.3.3
 [0.3.2]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.3.0...v0.3.1
