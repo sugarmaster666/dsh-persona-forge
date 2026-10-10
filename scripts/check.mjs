@@ -337,6 +337,25 @@ section('prompt construction')
 const omnissiah = catalog.cards.find((card) => card.id === 'omnissiah')
 const system = buildSystemPrompt(omnissiah, 'medium', examplesFor(omnissiah, 'medium'))
 check('system states speaker direction', system.includes('USER'), system.slice(0, 200))
+// The system prompt must NOT assert that the character is always the assistant.
+// It did, and that is false for a card like 硬邦邦, where the USER is the
+// character (the client addressing their own team). Both directions are valid;
+// the prompt has to allow both and let the card's style text decide.
+check(
+  'system allows the character to be either side',
+  system.includes('may be EITHER side') || system.includes('either side'),
+  'hardcoding one direction contradicts half the possible cards',
+)
+check(
+  'system no longer asserts the character is always the assistant',
+  !system.includes('The character described above is the ASSISTANT\'s identity.'),
+  'the user may be the character',
+)
+check(
+  'system gives the assistant-side default when the card is silent',
+  system.includes('safe default'),
+  'an unstated direction still needs a defined behaviour',
+)
 check('system carries the hard rules', system.includes('Preserve the technical content EXACTLY'))
 check('system carries fidelity rule', system.includes('STYLE ONLY'))
 check('system includes examples', system.includes('Conversion examples'))
@@ -488,6 +507,18 @@ const wellFormed = JSON.stringify({
   check('a malformed example is dropped, not repaired', withJunkExample.document?.examples?.length === 1, JSON.stringify(withJunkExample.document?.examples))
 }
 check('the draft prompt states the speaker direction', CARD_DRAFT_SYSTEM.includes('speaker direction'))
+// The generator must not hardcode the direction either: it has to take it from
+// the idea it is given, and only fall back when the idea is silent.
+check(
+  'the draft prompt allows either side',
+  CARD_DRAFT_SYSTEM.includes('both are valid') || CARD_DRAFT_SYSTEM.includes('either side'),
+  'the generator would otherwise produce the wrong direction for half the ideas',
+)
+check(
+  'the draft prompt takes the direction from the idea',
+  CARD_DRAFT_SYSTEM.includes('Take the direction from the idea'),
+  'the author decides the direction, not the generator',
+)
 check('the draft prompt demands four intensity keys', CARD_DRAFT_SYSTEM.includes('"light", "medium", "strong" and "zealot"'))
 check('the draft prompt forbids atmosphere-only examples', /Never replace a concrete requirement with atmosphere/.test(CARD_DRAFT_SYSTEM))
 check('the brief is delimited', frameCardBrief('a grumpy keeper').includes('<idea>'))
@@ -738,6 +769,23 @@ check(
     !/'settings\.ai\.direction': '[^']*\*\*/.test(clientSource),
     'the shell renders this as plain text, so asterisks would show literally',
   )
+  // The direction copy must NOT claim the character is always the AI. It did,
+  // and that is simply false: 硬邦邦 makes the USER the character (the user is
+  // the client addressing their own team), while 欧姆弥赛亚 makes the AI the
+  // character. Both are valid; only the ambiguity is the bug.
+  {
+    const direction = /'settings\.ai\.direction': '([^']*)'/.exec(clientSource)?.[1] ?? ''
+    check(
+      'the direction copy allows both sides',
+      direction.includes('或者') || direction.includes(' or '),
+      'stating one side as the rule contradicts the other bundled card',
+    )
+    check(
+      'the direction copy does not hardcode the character as the AI',
+      !direction.includes('不是角色本身') && !direction.includes('not the character itself'),
+      'the user may be the character',
+    )
+  }
 }
 // A generated card never acquires the power to add behavioural constraints:
 // that is the user's decision, so the copy must say the fidelity is fixed.
