@@ -565,12 +565,44 @@ check('the draft prompt states the speaker direction', CARD_DRAFT_SYSTEM.include
 // the idea it is given, and only fall back when the idea is silent.
 check(
   'the draft prompt allows either side',
-  CARD_DRAFT_SYSTEM.includes('both are valid') || CARD_DRAFT_SYSTEM.includes('either side'),
+  CARD_DRAFT_SYSTEM.includes('EITHER side') || CARD_DRAFT_SYSTEM.includes('either side'),
   'the generator would otherwise produce the wrong direction for half the ideas',
+)
+// THE REPORTED BUG: the generator wrote the CHARACTER's own line as the rewrite.
+// Given "the AI is my mother", it produced "乖，妈帮你把…" — the mother speaking.
+// The rewrite is always the USER's message, so the mother's line can never be
+// the output. The prompt has to say that, and show it.
+check(
+  'the draft prompt says the output is always the user\'s message',
+  CARD_DRAFT_SYSTEM.includes('ALWAYS the user\'s message'),
+  'without this the generator writes the character\'s reply instead of the user\'s request',
+)
+check(
+  'the draft prompt forbids the character\'s own speech',
+  CARD_DRAFT_SYSTEM.includes('character\'s own speech NEVER appears'),
+  'this is the exact failure that produced a card with the roles inverted',
+)
+check(
+  'the draft prompt carries a worked wrong/right pair',
+  CARD_DRAFT_SYSTEM.includes('WRONG:') && CARD_DRAFT_SYSTEM.includes('RIGHT:'),
+  'an abstract rule is what failed here; the model needs the contrast spelled out',
+)
+// The bundled cards are the ground truth for this rule, and they agree: in both,
+// `to` is the USER speaking (the client, the believer) — never the character.
+check(
+  'every bundled card\'s examples are the user speaking',
+  catalog.cards.every((card) => {
+    const sample = card.examplesByIntensity?.light?.[0] ?? card.examples?.[0]
+    if (sample === undefined) return false
+    // A character's own line addresses the user ("妈帮你…", "吾命汝…"); the user's
+    // line addresses the character. The bundled cards all address, not command.
+    return !/\bI will\b/i.test(sample.to)
+  }),
+  'the bundled cards define the rule the generator must follow',
 )
 check(
   'the draft prompt takes the direction from the idea',
-  CARD_DRAFT_SYSTEM.includes('Take the direction from the idea'),
+  CARD_DRAFT_SYSTEM.includes('take the direction from the idea'),
   'the author decides the direction, not the generator',
 )
 check('the draft prompt demands four intensity keys', CARD_DRAFT_SYSTEM.includes('"light", "medium", "strong" and "zealot"'))
