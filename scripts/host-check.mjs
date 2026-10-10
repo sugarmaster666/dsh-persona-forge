@@ -147,6 +147,8 @@ const services = {
 let registered
 const ctx = makeContext(services)
 
+// `factCheck` is deliberately still passed: it is a retired key, and a profile
+// that still carries it must not resurrect the second model call.
 apply(ctx, { sendMode: 'review', factCheck: true, watchCards: true })
 // The plugin loads bundled cards asynchronously; give that a turn to settle.
 await new Promise((resolve) => setTimeout(resolve, 200))
@@ -267,9 +269,8 @@ check('rewrite reports the card fidelity', rewrite.body?.value?.fidelity === 'st
     `${String(headerAgain.body?.value?.provider)}/${String(headerAgain.body?.value?.model)}`,
   )
 }
-check('rewrite carries a fact-check verdict', typeof rewrite.body?.value?.factCheck?.state === 'string', JSON.stringify(rewrite.body?.value?.factCheck))
-// The free deterministic check always runs, and it is reported separately from
-// the optional model check so the panel can show a concrete lost token.
+// The free deterministic check always runs, and it is the only verdict the
+// panel shows, so it must name a concrete lost token.
 check('rewrite carries the local facts verdict', typeof rewrite.body?.value?.facts?.state === 'string', JSON.stringify(rewrite.body?.value?.facts))
 
 // ---------------------------------------------------------------------------
@@ -338,7 +339,7 @@ function lastRewriteSystem() {
     (dropped.body?.value?.facts?.missing ?? []).includes('a.js'),
     JSON.stringify(dropped.body?.value?.facts),
   )
-  check('the local check spends no extra model call', llm.calls.length === before + 2, `${String(before)} -> ${String(llm.calls.length)} (rewrite + fact check)`)
+  check('the local check spends no extra model call', llm.calls.length === before + 1, `${String(before)} -> ${String(llm.calls.length)} (rewrite only)`)
   llm.setAnswer('万机之座在上，恳请您为我们编写一个快速排序算法，使重复之数各归其位。')
 }
 
@@ -491,7 +492,7 @@ const template = await post('/persona-forge/rewrite', { cardId: 'litany', text: 
 check('template card is discovered from a dropped file', template.status === 200, JSON.stringify(template.body))
 check('template mode renders without a model call', template.body?.value?.mode === 'template', template.body?.value?.mode)
 check('template substitutes the draft', String(template.body?.value?.text ?? '').includes('修复数组越界'), template.body?.value?.text)
-check('template mode reports the check as skipped', template.body?.value?.factCheck?.state === 'skipped', JSON.stringify(template.body?.value?.factCheck))
+check('template mode reports the local facts as clean', template.body?.value?.facts?.state === 'ok', JSON.stringify(template.body?.value?.facts))
 check('template mode made no llm call', llm.calls.length === callsBeforeTemplate, `before=${callsBeforeTemplate} after=${llm.calls.length}`)
 
 // ---------------------------------------------------------------------------
@@ -684,21 +685,19 @@ check(
   )
 }
 
-// The model check is a per-request switch: it costs a second call, so the
-// caller must be able to turn it off without editing config.
+// Every rewrite spends exactly ONE model call. The local preservation check is
+// free, and there is no longer a paid second pass: it doubled the latency and
+// token cost of every send to re-check what the string comparison answers for
+// nothing.
 {
   const before = llm.calls.length
-  const off = await post('/persona-forge/rewrite', { cardId: 'omnissiah', text: 'fix a.js now', sessionId: 'session-1', modelCheck: false })
-  check('the model check can be switched off per request', off.body?.value?.factCheck?.state === 'skipped', JSON.stringify(off.body?.value?.factCheck))
-  check('switching it off really skips the call', llm.calls.length === before + 1, `${String(before)} -> ${String(llm.calls.length)} (rewrite only)`)
-  // The free local check must still run and still be reported — turning off the
-  // paid check must not turn off all checking.
-  check('the free local check still runs with the model check off', typeof off.body?.value?.facts?.state === 'string', JSON.stringify(off.body?.value?.facts))
-
-  const beforeOn = llm.calls.length
-  const on = await post('/persona-forge/rewrite', { cardId: 'omnissiah', text: 'fix a.js now', sessionId: 'session-1', modelCheck: true })
-  check('the model check can be switched on per request', on.body?.value?.factCheck?.state !== 'skipped', JSON.stringify(on.body?.value?.factCheck))
-  check('switching it on really spends the call', llm.calls.length === beforeOn + 2, `${String(beforeOn)} -> ${String(llm.calls.length)} (rewrite + check)`)
+  const single = await post('/persona-forge/rewrite', { cardId: 'omnissiah', text: 'fix a.js now', sessionId: 'session-1' })
+  check('a rewrite spends exactly one model call', llm.calls.length === before + 1, `${String(before)} -> ${String(llm.calls.length)}`)
+  check('the rewrite carries the local facts verdict', typeof single.body?.value?.facts?.state === 'string', JSON.stringify(single.body?.value?.facts))
+  // A request that still carries the retired switch must not resurrect it.
+  const stale = await post('/persona-forge/rewrite', { cardId: 'omnissiah', text: 'fix a.js now', sessionId: 'session-1', modelCheck: true })
+  check('a retired modelCheck flag is ignored', llm.calls.length === before + 2, `${String(before)} -> ${String(llm.calls.length)} (one call per rewrite)`)
+  check('the response carries no fact-check verdict', stale.body?.value?.factCheck === undefined, JSON.stringify(stale.body?.value?.factCheck))
 }
 
 // The catalog reports which model an AI draft would use, so the settings page

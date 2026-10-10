@@ -29,9 +29,7 @@ import {
   buildSystemPrompt,
   examplesFor,
   frameDraft,
-  parseFactCheck,
   renderTemplate,
-  FACT_CHECK_SYSTEM,
   CARD_DRAFT_SYSTEM,
   frameCardBrief,
   parseCardDraft,
@@ -445,17 +443,6 @@ section('rewrite deadline')
 }
 
 // ---------------------------------------------------------------------------
-section('fact check parsing')
-
-check('OK parsed', parseFactCheck('OK').state === 'ok')
-check('OK with trailing text parsed', parseFactCheck('OK - voice only').state === 'ok')
-const drift = parseFactCheck('DRIFT: dropped the Rust requirement')
-check('DRIFT parsed', drift.state === 'drift' && drift.reason.includes('Rust'), JSON.stringify(drift))
-check('garbage is unavailable, never ok', parseFactCheck('maybe?').state === 'unavailable')
-check('empty is unavailable', parseFactCheck('').state === 'unavailable')
-check('fact check prompt demands one line', FACT_CHECK_SYSTEM.includes('exactly one line'))
-
-// ---------------------------------------------------------------------------
 section('AI card drafting')
 
 const wellFormed = JSON.stringify({
@@ -840,14 +827,20 @@ check(
   !clientSource.includes("'control.menu.manage'"),
   'that slot cannot open settings, so the key only pretends there is a path',
 )
-// The model check is OFF by default and controlled by the plugin row's config
-// alone. A client-side toggle for it would be a second setting for the same
-// thing, and it sits on the settings page -- which is about CARDS -- asking a
-// cost question on every visit.
+// The model-based second pass is GONE, not hidden. It doubled the latency and
+// the token cost of every send to re-check what the free token comparison
+// answers for nothing, and the settings page never offered a working control
+// for it — a documented feature with no reachable switch. Its prompt, its
+// parser and every wire field must be gone, not merely unreferenced.
 check(
-  'the model check has no client-side toggle',
-  !clientSource.includes('writeModelCheckPref') && !clientSource.includes("'settings.modelCheck'"),
-  'one setting should have one place: the plugin row config',
+  'the retired model check leaves no client-side trace',
+  !clientSource.includes('factCheck') && !clientSource.includes('modelCheck'),
+  'a dead wire field or a stale toggle is a second source of truth',
+)
+check(
+  'the retired model check leaves no verdict copy',
+  !clientSource.includes("'panel.drift'") && !clientSource.includes("'panel.checkOk'"),
+  'copy for a check that cannot run is a lie on screen',
 )
 // The waiting panel must show progress. A "改写中" with no sense of time reads
 // as FROZEN -- the user cannot tell "working" from "hung".
@@ -1037,6 +1030,35 @@ section('send-gesture decision')
     'every decision carries a reason',
     [decideSend(snap(), undefined), decideSend(snap({ busy: true }), undefined), decideSend(null, undefined)]
       .every((decision) => typeof decision.reason === 'string' && decision.reason !== ''),
+  )
+}
+
+// ---------------------------------------------------------------------------
+section('the composer button is per session')
+
+// The panel is one shared surface, so its phase is global — but the BUTTON must
+// read it per session. Reading the global phase made every open composer render
+// "改写中…" while any single session was rewriting, which reads as "the plugin
+// is stuck" in sessions doing nothing at all. Reported exactly that way.
+{
+  // The button's busy flag is derived from `panelOwned`, which is filtered by
+  // sessionKey. The two must stay wired together: a `busy` that ignores
+  // `panelOwned` is the global read this guards against.
+  check(
+    'the composer button derives busy from the session-scoped panel',
+    /const panelOwned = shared\.panel !== null && shared\.panel\.sessionKey === sessionKey \? shared\.panel : null[\s\S]{0,400}const busy = panelOwned !== null && panelOwned\.phase === 'loading'/.test(clientSource),
+    'a global busy flag makes every other session look stuck',
+  )
+  // `busy` is still what the button renders, and `busyHere` what the guards use.
+  check(
+    'the button renders the session-scoped busy',
+    /busy \? t\('control\.busy'\) : label/.test(clientSource),
+    'the label must follow the same flag the guard uses',
+  )
+  check(
+    'there is exactly one busy derivation',
+    (clientSource.match(/shared\.panel !== null && shared\.panel\.phase === 'loading'/g) ?? []).length === 0,
+    'a second, global derivation is how the two drifted apart before',
   )
 }
 // Enter is the primary send gesture and does not go through the button, so the
