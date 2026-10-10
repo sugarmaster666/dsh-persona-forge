@@ -691,6 +691,66 @@ check(
   clientSource.includes("t('settings.ai.generate')"),
   'generation must be a user action, never automatic',
 )
+// The description must name the FIELDS the generator actually fills, and the
+// one it deliberately refuses to. The copy said "按同一套规范" — a phrase that
+// told the user nothing, because "the spec" was an internal quality standard
+// rather than anything they could see on the form.
+{
+  const desc = /'settings\.ai\.desc': '([^']*)'/.exec(clientSource)?.[1] ?? ''
+  check(
+    'the AI draft description names the card fields',
+    ['名字', '图标', '简介', '风格'].every((field) => desc.includes(field)),
+    `the user cannot see what "the spec" means: ${desc}`,
+  )
+  check(
+    'the AI draft description no longer says "同一套规范"',
+    !desc.includes('规范'),
+    'an internal standard is not something the user can act on',
+  )
+  // The speaker direction is this plugin's number-one failure mode, and the
+  // BRIEF is where it gets decided. The old placeholder described a character
+  // and nothing else, so the generator had to guess whether the user or the
+  // assistant plays them — while its own system prompt demands the style text
+  // state the direction. An example that omits it teaches the wrong thing.
+  check(
+    'the AI draft description asks who plays whom',
+    desc.includes('AI 扮演') || desc.includes('AI plays'),
+    'a brief that does not say who plays whom leaves the direction to chance',
+  )
+  const placeholder = /'settings\.ai\.briefPlaceholder': '([^']*)'/.exec(clientSource)?.[1] ?? ''
+  check(
+    'the brief placeholder demonstrates the speaker direction',
+    placeholder.includes('AI 扮演') || placeholder.includes('AI plays'),
+    'the example is the strongest teaching signal in the box',
+  )
+  check(
+    'the brief placeholder names the user\'s own role',
+    placeholder.includes('我是') || placeholder.includes('I am'),
+    'the direction is only complete when both sides are named',
+  )
+  check(
+    'the direction is stated in the AI box itself',
+    clientSource.includes("t('settings.ai.direction')"),
+    'the failure is silent, so the rule belongs where the brief is written',
+  )
+  check(
+    'the direction copy carries no markdown',
+    !/'settings\.ai\.direction': '[^']*\*\*/.test(clientSource),
+    'the shell renders this as plain text, so asterisks would show literally',
+  )
+}
+// A generated card never acquires the power to add behavioural constraints:
+// that is the user's decision, so the copy must say the fidelity is fixed.
+check(
+  'the generated card is pinned to voice-only fidelity',
+  /fidelity: 'style',\s*\n\s*mode: 'llm'/.test((await readFile(join(root, 'lib', 'prompts.js'), 'utf8'))),
+  'a generated card must not quietly acquire constraint-adding power',
+)
+check(
+  'the copy states the generated fidelity is fixed',
+  /'settings\.ai\.hint': '[^']*只改语气/.test(clientSource),
+  'a fixed default the user is not told about is a surprise later',
+)
 
 // The form must carry the per-intensity examples. Leaving them out silently
 // dropped them on the next save: editing a bundled card discarded all four
