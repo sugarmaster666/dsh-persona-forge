@@ -361,14 +361,14 @@ check(
   system.includes('safe default'),
   'an unstated direction still needs a defined behaviour',
 )
-check('system carries the hard rules', system.includes('Preserve the TECHNICAL content EXACTLY'))
+check('system carries the hard rules', system.includes('Preserve every requirement the draft STATES'))
 check('system carries fidelity rule', system.includes('VOICE ONLY'))
 check('system includes examples', system.includes('Conversion examples'))
 check('zealot examples differ from medium', examplesFor(omnissiah, 'zealot')[0].to !== examplesFor(omnissiah, 'medium')[0].to)
 
 const muscle = catalog.cards.find((card) => card.id === 'muscle-crew')
 const strategySystem = buildSystemPrompt(muscle, 'zealot', examplesFor(muscle, 'zealot'))
-check('strategy fidelity stated for muscle crew', strategySystem.includes('BEHAVIOURAL FRAMING ALLOWED'))
+check('strategy fidelity stated for muscle crew', strategySystem.includes('IMPLEMENTATION DETAILS ALLOWED'))
 
 // THE CONFLICT THAT MADE `strategy` A NO-OP: the hard rules said "never add,
 // remove, widen or reinterpret a requirement" while declaring themselves an
@@ -377,22 +377,22 @@ check('strategy fidelity stated for muscle crew', strategySystem.includes('BEHAV
 // instruction), so the absolute prohibition swallowed the permission and
 // strategy behaved like style.
 {
-  const fidelityAt = strategySystem.indexOf('BEHAVIOURAL FRAMING ALLOWED')
+  const fidelityAt = strategySystem.indexOf('IMPLEMENTATION DETAILS ALLOWED')
   const hardAt = strategySystem.indexOf('Hard rules (these override every other instruction')
   check('the fidelity block and the hard rules both appear', fidelityAt !== -1 && hardAt !== -1)
   check(
     'the hard rules carve out behavioural framing',
-    strategySystem.includes('do not forbid adding behavioural framing'),
+    strategySystem.includes('do not forbid ADDING implementation requirements'),
     'without the carve-out the override clause cancels the permission',
   )
   check(
     'the hard rules speak of TECHNICAL content, not "constraints"',
-    strategySystem.includes('TECHNICAL content EXACTLY') && !strategySystem.includes('Never add, remove, widen, narrow or reinterpret a requirement'),
+    strategySystem.includes('Preserve every requirement the draft STATES') && !strategySystem.includes('Never add, remove, widen or reinterpret'),
     'the old wording read as a ban on the framing strategy is meant to add',
   )
   check(
     'the strategy block names what it may add',
-    strategySystem.includes('MAY add instructions to the assistant about HOW to approach the work'),
+    strategySystem.includes('MAY add concrete implementation requirements'),
     'the permission has to be concrete to survive the hard rules',
   )
 }

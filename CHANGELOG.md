@@ -6,6 +6,35 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.8.1] - 2026-10-10
+
+### Changed
+
+- **"Constraints" now means what it should: concrete IMPLEMENTATION requirements.**
+  The strategy fidelity was read as permission to add behavioural framing ("do
+  not over-plan"), which is not what a constraint is. It now permits adding the
+  concrete features and limits a competent take on the request implies but the
+  user did not spell out — for "写一个我的世界": 方块系统、合成表、生存模式、存档.
+
+  The hard rules said the opposite: "never add, remove, widen or reinterpret a
+  requirement", while declaring themselves an override of everything. That
+  cancelled the permission and made the setting a no-op. They are now about
+  PROTECTING what the draft states — nothing stated may be removed, weakened or
+  contradicted — and explicitly leave ADDING to the fidelity block.
+
+  Both bundled cards' strategy sets now demonstrate real additions (边界用例、
+  三数取中、复现之证、入参校验) rather than tone advice.
+
+### Known limitation
+
+- **The local fact check cannot see an added requirement written in Chinese.**
+  compareFacts reports an addition only for a token it can prove is structural
+  — a path, number, flag or code span. 方块系统 and 生存模式 are bare words, so they
+  pass unreported, and the panel's "新增" line stays empty even when the rewrite
+  added them. The added detail is still visible in the editable result column,
+  which is where a reviewer would catch it.
+
+
 ## [0.8.0] - 2026-10-10
 
 ### Added

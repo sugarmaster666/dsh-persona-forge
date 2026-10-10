@@ -315,7 +315,7 @@ function lastRewriteSystem() {
   check('a voice-only card can be widened per message', widened.body?.value?.fidelity === 'strategy', JSON.stringify(widened.body?.value?.fidelity))
   check(
     'the widened fidelity reaches the prompt too',
-    lastRewriteSystem().includes('BEHAVIOURAL FRAMING ALLOWED'),
+    lastRewriteSystem().includes('IMPLEMENTATION DETAILS ALLOWED'),
     'a fidelity reported but not applied is a setting that does nothing',
   )
   // And the card's own default still applies when the caller names nothing.
@@ -378,7 +378,7 @@ function lastRewriteSystem() {
 // The system prompt must carry the rules the design depends on.
 const sentSystem = llm.calls[0]?.system ?? ''
 check('system prompt states the speaker direction', sentSystem.includes('USER'), sentSystem.slice(0, 120))
-check('system prompt carries the preservation rules', sentSystem.includes('Preserve the TECHNICAL content EXACTLY'))
+check('system prompt carries the preservation rules', sentSystem.includes('Preserve every requirement the draft STATES'))
 check('system prompt carries the conversion examples', sentSystem.includes('Conversion examples'))
 check('the draft is framed, not inlined raw', String(llm.calls[0]?.messages?.[0]?.content?.[0]?.text ?? '').includes('<draft>'))
 // The rewrite must send NO reasoningEffort at all, on any route.
