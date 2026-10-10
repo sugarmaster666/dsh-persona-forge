@@ -765,11 +765,18 @@ check(
   clientSource.includes('pf-card-cfg') && clientSource.includes("t('control.cardCfg'"),
   'a shared block above the list reads as a global switch',
 )
-// The card directory is housekeeping, not part of choosing a character.
+// The card directory has exactly ONE entry point, and it is the settings page.
+// It was also a menu row, which put a one-time housekeeping action in the path
+// of the common one — and a second door to the same room.
 check(
-  'the card directory lives inside more-settings',
-  clientSource.indexOf("t('control.menu.reveal')") > clientSource.indexOf('advancedOpen'),
-  'a one-time action should not sit in the path of the common one',
+  'the menu no longer carries a directory action',
+  !clientSource.includes("t('control.menu.reveal')") && !clientSource.includes("t('control.more')"),
+  'the settings page already opens the directory',
+)
+check(
+  'the settings page still opens the directory',
+  clientSource.includes("t('settings.reveal')") && clientSource.includes('revealDir()'),
+  'removing the menu row must not remove the only way in',
 )
 
 // Restoring the original must REWIND the "already rewritten" memory, not keep
@@ -840,24 +847,41 @@ check(
   'a raw code would reach the panel',
 )
 
-// The composer menu is a CHARACTER PICKER first. Per-session overrides of a
-// card's own declaration are set once and then forgotten, so they must not sit
-// flat beside the picker giving it five equal-weight rows and 248 characters of
-// permanent explanation.
+// The composer menu is a CHARACTER PICKER first, so everything that configures
+// a character lives in ONE fold under the character it configures — rather than
+// a shared block above the list (which read as a global switch) or a second,
+// separate "more settings" fold (which split one idea across two places).
 check(
-  'advanced settings are folded away',
-  clientSource.includes('pf-more') && clientSource.includes('setAdvancedOpen'),
+  'character settings are folded away',
+  clientSource.includes('pf-card-cfg') && clientSource.includes('setCardCfgOpen'),
   'the menu should not present overrides as equal-weight controls',
 )
 check(
   'the fold starts closed',
-  /const \[advancedOpen, setAdvancedOpen\] = useState\(false\)/.test(clientSource),
+  /const \[cardCfgOpen, setCardCfgOpen\] = useState\(false\)/.test(clientSource),
   'an open fold by default defeats the point',
 )
 check(
-  'the folded row still reports what is overridden',
-  clientSource.includes('control.more.custom') && clientSource.includes('advancedSummary'),
+  'there is no second settings fold',
+  !clientSource.includes('setAdvancedOpen') && !clientSource.includes('advancedSummary'),
+  'two folds for one idea is how the settings drifted apart before',
+)
+check(
+  'the folded row still reports the current settings',
+  /className: 'pf-item-desc'[\s\S]{0,400}control\.intensity\.\$\{effectiveIntensity\}/.test(clientSource),
   'a folded-away choice the user forgot about is a surprise waiting to happen',
+)
+// Rewrite mode belongs with the character, not in a separate fold — and each
+// option says what it does, because the row alone named three and explained none.
+check(
+  'rewrite mode is configured per character',
+  clientSource.indexOf("t('control.mode')") > clientSource.indexOf('cardCfgOpen'),
+  'rewrite mode is a property of the character',
+)
+check(
+  'every rewrite mode carries a description',
+  ['card', 'llm', 'template'].every((mode) => clientSource.includes(`t('control.mode.desc.${mode}')`)),
+  'naming three options without explaining them is a guessing game',
 )
 // A control that cannot do anything should not be on screen. On a voice-only
 // card both fidelity options resolve identically, so the row is only rendered
