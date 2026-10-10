@@ -733,17 +733,25 @@ check('no hidden right-click-only trigger remains', !clientSource.includes('onCo
 
 // Restoring the original must REWIND the "already rewritten" memory, not keep
 // it. Otherwise a rewrite the user cancelled can never be retried: the next
-// send on the restored draft matches `previous.original === text` and the
-// plugin silently lets the raw text through.
+// send on the restored draft matches the recorded result and the plugin
+// silently lets the raw text through.
 check(
   'restoring the original forgets the rewrite',
   /lastRewrite\.delete\(sessionKey\)/.test(clientSource),
   'a cancelled rewrite would be impossible to retry',
 )
+// Anything else is a SETTLED result — the model's rewrite, or the user's own
+// edit of it in the now-editable result column — and must be recorded so that
+// sending it from the composer does not rewrite it a second time.
 check(
-  'the forget only fires when the ORIGINAL is put back',
-  /if \(text === panel\.original\) lastRewrite\.delete\(sessionKey\)/.test(clientSource),
-  'sending the rewrite itself must still be recognised as already rewritten',
+  'a settled result is recorded as already rewritten',
+  /lastRewrite\.set\(sessionKey, \{ result: text, original: panel\.original \}\)/.test(clientSource),
+  'an edited result would come back as a fresh rewrite of the user own edit',
+)
+check(
+  'the rewind and the record are mutually exclusive',
+  /if \(text === panel\.original\) \{[\s\S]*?lastRewrite\.delete\(sessionKey\)[\s\S]*?\} else \{[\s\S]*?lastRewrite\.set\(sessionKey/.test(clientSource),
+  'restoring must not also record itself as a result',
 )
 
 // The "one wedged rewrite poisons every later one" bug.
@@ -953,6 +961,51 @@ section('send-gesture decision')
   // An in-flight rewrite for THIS session swallows the gesture, so the raw
   // draft is never sent while the panel says "rewriting".
   check('an in-flight rewrite swallows the gesture', decideSend(snap({ busy: true }), undefined).action === 'swallow')
+
+  // A settled review panel makes the composer's send arrow inert. The panel is
+  // the decision point; letting the arrow through would either send the raw
+  // draft past the review or start a SECOND rewrite of it — the duplicate the
+  // user reported after the panel appeared.
+  check(
+    'an open review panel swallows the send gesture',
+    decideSend(snap({ panelOpen: true }), undefined).action === 'swallow',
+    'the composer arrow must be inert while the panel is up, or the send duplicates',
+  )
+  check(
+    'the panel guard outranks a non-empty draft',
+    decideSend(snap({ panelOpen: true, draft: 'something new' }), undefined).action === 'swallow',
+  )
+  check(
+    'closing the panel re-arms the composer',
+    decideSend(snap({ panelOpen: false }), undefined).action === 'rewrite',
+  )
+
+  // "Fill only" is gone from the normal flow: the result column is editable, so
+  // writing the text into the composer without sending is the same act as
+  // reviewing it. It survives ONLY as the fallback for a shell with no submit,
+  // where it is the sole way to get the text out.
+  check(
+    'the fill fallback is offered only without a submit action',
+    /submit === null\s*\n\s*\?\s*h\('button'[\s\S]{0,200}panel\.fill/.test(clientSource),
+    'the fill button must not compete with Send',
+  )
+  // The result column is an editable control, and what Send/Fill carry is the
+  // EDITED text — not the model's original output.
+  check(
+    'the result column is editable',
+    /'textarea',\s*\{[\s\S]{0,300}onChange:/.test(clientSource),
+    'a read-only result forces a round trip to fix one word',
+  )
+  check(
+    'the actions carry the edited text',
+    /const text = edited !== null && edited\.seed === editSeed \? edited\.text : generated/.test(clientSource),
+    'Send/Fill must use what the user sees, not the raw model output',
+  )
+  check(
+    'an edited result is called out',
+    clientSource.includes("t('panel.edited')") && /is-edited/.test(clientSource),
+    'silently sending edited text is a surprise',
+  )
 
   // Sending the rewrite itself must not rewrite it again.
   check(
