@@ -6,6 +6,27 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.7.1] - 2026-10-10
+
+### Fixed
+
+- **AI card drafting no longer runs out of output budget part-way through the
+  examples.** The draft call asked for **2048** output tokens, but a complete card
+  is bigger than that: each bundled card is ~1700 characters of CJK body, which
+  is well over 2000 tokens once the JSON wrapper and four intensity sets are
+  counted. `examplesByIntensity` is the longest field and the one written last, so
+  it was exactly what got cut. The budget is now 4096, matching the rewrite call.
+
+- **A generated card must carry all four intensity sets, or the generation is
+  refused.** The parser accepted whatever rungs arrived, so a truncated answer
+  produced a card that looked complete in the form while two of its four settings
+  had **nothing to demonstrate** — the voice quietly vanished at those levels.
+  It now reports which levels are missing and asks the user to retry.
+
+  This was the second half of the same bug: raising the budget makes truncation
+  rare, and refusing the partial card means it can no longer pass unnoticed when
+  it does happen.
+
 ## [0.7.0] - 2026-10-10
 
 ### Fixed
@@ -776,7 +797,8 @@ First public release.
   tools, and never enters the session log. What the session records is the text
   the user actually sent.
 
-[Unreleased]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.7.0...HEAD
+[Unreleased]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.7.1...HEAD
+[0.7.1]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.7.0...v0.7.1
 [0.7.0]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.6.4...v0.7.0
 [0.6.4]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.6.3...v0.6.4
 [0.6.3]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.6.2...v0.6.3

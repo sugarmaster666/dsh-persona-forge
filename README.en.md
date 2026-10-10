@@ -331,6 +331,12 @@ are deliberately fixed: **fidelity** is always voice-only, and **rewrite mode**
 is always model rewrite. A generated card should not quietly acquire the power to
 add constraints to your request; raise it by hand if you want it.
 
+> **All four intensity sets must come back, or the generation counts as failed.**
+> The examples are the longest part of a card, and a model occasionally runs out
+> of output budget part-way through them. That used to be accepted as-is, which
+> left the missing levels with **nothing to demonstrate** — it looked fine and was
+> quietly worse. It now reports an error; retrying once is usually enough.
+
 **Which model it uses has to be stated precisely:**
 
 | Case | Which model |
