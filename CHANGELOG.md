@@ -29,18 +29,6 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   bundled cards already named it — 欧姆弥赛亚 is "a supplicant's prayer to the
   Machine God", 硬邦邦 is "**the user** is the client".
 
-### Added
-
-- **Checks pin the direction into the brief.** The placeholder must demonstrate
-  who plays whom and must name the user's own role; the description must ask for
-  it; the rule must be stated in the box; and the copy must carry no markdown,
-  since the shell renders it as plain text. Confirmed red against the old
-  placeholder.
-
-## [0.6.1] - 2026-10-10
-
-### Fixed
-
 - **The AI-draft copy said who does what, and what "the spec" actually is.**
   It read "用一句话描述角色的思路，AI 会按同一套规范把表单填好" — with no
   subject, so it was unclear whether *you* describe the character or the AI
@@ -56,6 +44,12 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   to add constraints to your request.
 
 ### Added
+
+- **Checks pin the direction into the brief.** The placeholder must demonstrate
+  who plays whom and must name the user's own role; the description must ask for
+  it; the rule must be stated in the box; and the copy must carry no markdown,
+  since the shell renders it as plain text. Confirmed red against the old
+  placeholder.
 
 - **Checks pin that copy to the behaviour.** The description must name the four
   fields the generator fills and must not fall back to "规范", and the generated
@@ -697,8 +691,7 @@ First public release.
   the user actually sent.
 
 [Unreleased]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.6.2...HEAD
-[0.6.2]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.6.1...v0.6.2
-[0.6.1]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.6.0...v0.6.1
+[0.6.2]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.6.0...v0.6.2
 [0.6.0]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.5.2...v0.6.0
 [0.5.2]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.5.1...v0.5.2
 [0.5.1]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.5.0...v0.5.1
