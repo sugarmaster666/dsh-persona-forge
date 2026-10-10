@@ -187,11 +187,11 @@ check('no bundled diagnostics', catalog.diagnostics.length === 0, JSON.stringify
 for (const card of catalog.cards) {
   // The speaker direction must be stated, or the model inverts the roles.
   check(`${card.id}: style states speaker direction`, /发言者|speaker/i.test(card.style), card.style.slice(0, 80))
-  check(`${card.id}: has examples`, card.examples.length > 0)
-  // Every intensity the ladder offers must RESOLVE to demonstrations. A level
-  // with no per-intensity set falls back to the card's flat `examples`, which
-  // is the documented behaviour — so the assertion is on the resolved set, not
-  // on the raw map.
+  // Every intensity the ladder offers must RESOLVE to demonstrations. The flat
+  // `examples` list is a RETIRED fallback: a card may still carry one (older
+  // files do) and `examplesFor` still reaches for it, but a card whose rungs are
+  // all populated must not need it — carrying both was two places to write the
+  // same thing, with the flat one silently dead.
   check(`${card.id}: has per-intensity examples`, card.examplesByIntensity !== undefined, JSON.stringify(Object.keys(card.examplesByIntensity ?? {})))
   const resolvedByLevel = Object.fromEntries(
     INTENSITY_LEVELS.map((level) => [level, examplesFor(card, level)]),
@@ -200,6 +200,11 @@ for (const card of catalog.cards) {
     `${card.id}: every intensity rung resolves to demonstrations`,
     INTENSITY_LEVELS.every((level) => Array.isArray(resolvedByLevel[level]) && resolvedByLevel[level].length > 0),
     JSON.stringify(Object.fromEntries(INTENSITY_LEVELS.map((level) => [level, resolvedByLevel[level].length]))),
+  )
+  check(
+    `${card.id}: needs no flat examples fallback`,
+    card.examples.length === 0,
+    'a card with all four rungs populated should not also carry a dead flat list',
   )
   // The ladder must actually do something: no two rungs may resolve to the
   // same demonstrations, or the levels are decorative.
@@ -497,10 +502,32 @@ const wellFormed = JSON.stringify({
   // Models wrap JSON in fences or bracket it with prose; both must survive.
   const messy = `Sure!\n\`\`\`json\n${wellFormed}\n\`\`\`\nHope that helps.`
   check('a fenced answer with prose still parses', parseCardDraft(messy).document?.id === 'lighthouse-keeper', JSON.stringify(parseCardDraft(messy).error))
+  // THE REPORTED FAILURE: clean JSON with a sentence AFTER it. The recovery step
+  // used to run only when the text did not START with `{`, so this exact shape
+  // skipped recovery and blew up with "Unexpected non-whitespace character after
+  // JSON". A trailing sentence is one of the most common model habits.
+  const trailing = `${wellFormed}\nThis card captures the lighthouse keeper's voice.`
+  check(
+    'clean JSON with a trailing sentence still parses',
+    parseCardDraft(trailing).document?.id === 'lighthouse-keeper',
+    JSON.stringify(parseCardDraft(trailing).error),
+  )
+  check(
+    'a fenced answer with a trailing sentence still parses',
+    parseCardDraft(`\`\`\`json\n${wellFormed}\n\`\`\`\nEnjoy!`).document?.id === 'lighthouse-keeper',
+    JSON.stringify(parseCardDraft(`\`\`\`json\n${wellFormed}\n\`\`\`\nEnjoy!`).error),
+  )
+  check(
+    'a trailing blank line does not break parsing',
+    parseCardDraft(`${wellFormed}\n\n`).document?.id === 'lighthouse-keeper',
+    JSON.stringify(parseCardDraft(`${wellFormed}\n\n`).error),
+  )
   check('bare prose is rejected', parseCardDraft('I cannot do that').error !== undefined)
   check('an empty answer is rejected', parseCardDraft('   ').error !== undefined)
   check('malformed JSON is rejected', parseCardDraft('{ "id": ').error !== undefined)
   check('a JSON array is rejected', parseCardDraft('[1,2,3]').error !== undefined)
+  // Recovery must not invent an object out of unrelated text.
+  check('prose with no object is rejected', parseCardDraft('Sorry, I cannot help with that.').error !== undefined)
   // A malformed example is dropped, not turned into a half-example that would
   // teach the model a broken format.
   const withJunkExample = parseCardDraft(JSON.stringify({ id: 'x-card', name: 'X', style: 'Speak plainly.', examples: [{ from: 'a', to: 'b' }, { from: '', to: 'c' }, 'nonsense'] }))
