@@ -9,7 +9,7 @@ character's voice by the harness LLM before it is sent — following the model
 the session is already using. Choose whether the rewrite goes straight out or
 lands back in the composer for review.
 
-> **Status:** early (`0.6.x`). The card format and the HTTP contract are stable
+> **Status:** early (`0.7.x`). The card format and the HTTP contract are stable
 > enough to build on; expect additive changes and read the changelog before
 > upgrading.
 
@@ -403,19 +403,25 @@ style: |
   【发言者方向】用「信徒」的口吻说话，向万机之神恳求……
   语气：庄严、古奥、仪式化。
 
-# Conversion demonstrations: input draft → persona voice.
-examples:
-  - from: 帮我写个快速排序
-    to: >
-      万机之座在上，吾等恳请您赐予枢机之序的奥义：
-      请为我们编写一个快速排序算法，使重复之数各归其位。
-
-# Optional: different demonstrations per intensity. If omitted for a level,
-# the flat `examples` list is used instead.
+# Conversion demonstrations: input draft → persona voice, one set per level.
+#
+# Four sets is all you need. An earlier version also had a flat `examples:` list,
+# but it was only the fallback for a level with no set of its own — on a card
+# with all four populated it was never reached, yet still had to be maintained.
+# Write only this now. (A flat `examples:` in an older file is still READ and
+# still falls back; it is just no longer something you need to write.)
 examplesByIntensity:
   light:
     - from: 帮我写个快速排序
       to: 万机之座在上，恳请您为我们编写一个快速排序算法。
+  medium:
+    - from: 帮我写个快速排序
+      to: >
+        万机之座在上，吾等恳请您赐予枢机之序的奥义：
+        请为我们编写一个快速排序算法，使重复之数各归其位。
+  strong:
+    - from: 帮我写个快速排序
+      to: 伟大而不朽的万机之神，恳请您赐予枢机之序的奥义……
   zealot:
     - from: 帮我写个快速排序
       to: 伟大而不朽的万机之神……

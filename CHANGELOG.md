@@ -6,6 +6,39 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-10-10
+
+### Fixed
+
+- **AI card drafting no longer fails when the model appends a sentence.** The
+  recovery step that slices the outermost `{…}` out of the answer ran **only when
+  the text did not start with `{`**. A model that emitted clean JSON and then one
+  line of commentary — a very common habit — therefore skipped recovery and was
+  parsed whole, failing with:
+
+  > the model returned invalid JSON: Unexpected non-whitespace character after
+  > JSON at position 1051
+
+  Recovery now runs whenever the raw text does not parse on its own, so a leading
+  sentence, a trailing sentence, a code fence, or any combination of them all
+  survive. Text with no object in it is still rejected, and a legitimate object is
+  never rewritten on the way in.
+
+### Removed
+
+- **The flat `examples:` list, from the form and from the bundled cards.** It was
+  the fallback for a card whose per-intensity sets were missing, but
+  `examplesFor` prefers `examplesByIntensity` — so on the bundled cards, which
+  populate all four rungs, the flat list of four was **dead data** that still had
+  to be read and kept in sync. The two bundled cards carried 4 flat examples plus
+  8 per-intensity ones, and only the 8 ever ran.
+
+  A card file that still carries `examples:` is **still read** and still falls
+  back to it; the form simply no longer offers a second place to write the same
+  thing. Saving a card preserves any flat list it already had, because `save`
+  writes the payload as the whole card rather than merging — without that, editing
+  a legacy card's name would silently delete its examples.
+
 ## [0.6.4] - 2026-10-10
 
 ### Changed
@@ -743,7 +776,8 @@ First public release.
   tools, and never enters the session log. What the session records is the text
   the user actually sent.
 
-[Unreleased]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.6.4...HEAD
+[Unreleased]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.6.4...v0.7.0
 [0.6.4]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.6.3...v0.6.4
 [0.6.3]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.6.2...v0.6.3
 [0.6.2]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.6.0...v0.6.2
