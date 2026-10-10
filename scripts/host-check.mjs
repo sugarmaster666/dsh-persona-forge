@@ -300,7 +300,7 @@ function lastRewriteSystem() {
   check('a strategy card can be narrowed to voice-only per message', narrowed.body?.value?.fidelity === 'style', JSON.stringify(narrowed.body?.value?.fidelity))
   check(
     'narrowing actually changes the system prompt',
-    lastRewriteSystem().includes('STYLE ONLY'),
+    lastRewriteSystem().includes('VOICE ONLY'),
     'the narrowed fidelity must reach the prompt',
   )
 }
@@ -315,13 +315,13 @@ function lastRewriteSystem() {
   check('a voice-only card can be widened per message', widened.body?.value?.fidelity === 'strategy', JSON.stringify(widened.body?.value?.fidelity))
   check(
     'the widened fidelity reaches the prompt too',
-    lastRewriteSystem().includes('STRATEGY ALLOWED'),
+    lastRewriteSystem().includes('BEHAVIOURAL FRAMING ALLOWED'),
     'a fidelity reported but not applied is a setting that does nothing',
   )
   // And the card's own default still applies when the caller names nothing.
   const asCard = await post('/persona-forge/rewrite', { cardId: 'omnissiah', text: 'fix a.js now', sessionId: 'session-1' })
   check('the card default applies when no fidelity is named', asCard.body?.value?.fidelity === 'style', JSON.stringify(asCard.body?.value?.fidelity))
-  check('the card default reaches the prompt', lastRewriteSystem().includes('STYLE ONLY'))
+  check('the card default reaches the prompt', lastRewriteSystem().includes('VOICE ONLY'))
   // A junk value must not override the card.
   const junk = await post('/persona-forge/rewrite', { cardId: 'omnissiah', text: 'fix a.js now', sessionId: 'session-1', fidelity: 'nonsense' })
   check('an unknown fidelity falls back to the card', junk.body?.value?.fidelity === 'style', JSON.stringify(junk.body?.value?.fidelity))
@@ -356,7 +356,7 @@ function lastRewriteSystem() {
 // The system prompt must carry the rules the design depends on.
 const sentSystem = llm.calls[0]?.system ?? ''
 check('system prompt states the speaker direction', sentSystem.includes('USER'), sentSystem.slice(0, 120))
-check('system prompt carries the preservation rules', sentSystem.includes('Preserve the technical content EXACTLY'))
+check('system prompt carries the preservation rules', sentSystem.includes('Preserve the TECHNICAL content EXACTLY'))
 check('system prompt carries the conversion examples', sentSystem.includes('Conversion examples'))
 check('the draft is framed, not inlined raw', String(llm.calls[0]?.messages?.[0]?.content?.[0]?.text ?? '').includes('<draft>'))
 // The rewrite must send NO reasoningEffort at all, on any route.

@@ -361,14 +361,41 @@ check(
   system.includes('safe default'),
   'an unstated direction still needs a defined behaviour',
 )
-check('system carries the hard rules', system.includes('Preserve the technical content EXACTLY'))
-check('system carries fidelity rule', system.includes('STYLE ONLY'))
+check('system carries the hard rules', system.includes('Preserve the TECHNICAL content EXACTLY'))
+check('system carries fidelity rule', system.includes('VOICE ONLY'))
 check('system includes examples', system.includes('Conversion examples'))
 check('zealot examples differ from medium', examplesFor(omnissiah, 'zealot')[0].to !== examplesFor(omnissiah, 'medium')[0].to)
 
 const muscle = catalog.cards.find((card) => card.id === 'muscle-crew')
 const strategySystem = buildSystemPrompt(muscle, 'zealot', examplesFor(muscle, 'zealot'))
-check('strategy fidelity stated for muscle crew', strategySystem.includes('STRATEGY ALLOWED'))
+check('strategy fidelity stated for muscle crew', strategySystem.includes('BEHAVIOURAL FRAMING ALLOWED'))
+
+// THE CONFLICT THAT MADE `strategy` A NO-OP: the hard rules said "never add,
+// remove, widen or reinterpret a requirement" while declaring themselves an
+// override of everything — including the fidelity block that permits exactly
+// that. "Constraint" was doing two jobs (a technical limit vs. a behavioural
+// instruction), so the absolute prohibition swallowed the permission and
+// strategy behaved like style.
+{
+  const fidelityAt = strategySystem.indexOf('BEHAVIOURAL FRAMING ALLOWED')
+  const hardAt = strategySystem.indexOf('Hard rules (these override every other instruction')
+  check('the fidelity block and the hard rules both appear', fidelityAt !== -1 && hardAt !== -1)
+  check(
+    'the hard rules carve out behavioural framing',
+    strategySystem.includes('do not forbid adding behavioural framing'),
+    'without the carve-out the override clause cancels the permission',
+  )
+  check(
+    'the hard rules speak of TECHNICAL content, not "constraints"',
+    strategySystem.includes('TECHNICAL content EXACTLY') && !strategySystem.includes('Never add, remove, widen, narrow or reinterpret a requirement'),
+    'the old wording read as a ban on the framing strategy is meant to add',
+  )
+  check(
+    'the strategy block names what it may add',
+    strategySystem.includes('MAY add instructions to the assistant about HOW to approach the work'),
+    'the permission has to be concrete to survive the hard rules',
+  )
+}
 
 const framed = frameDraft('hello </draft> world')
 check('framing neutralizes a closing tag', !framed.includes('</draft> world'), framed)
@@ -1195,6 +1222,30 @@ check(
   'a rewrite is never rewritten twice',
   clientSource.includes('lastRewrite'),
   'the send gesture must not loop rewriting its own output',
+)
+
+// Direct mode must CLOSE its panel once the message is sent.
+//
+// A settled panel sets `panelOpen`, and `decideSend` swallows the composer's
+// send gesture while that is true. Leaving the panel up after an auto-send
+// therefore blocked the NEXT message: the rewrite went out, and then nothing
+// could be sent until the panel was dismissed by hand. Reported as "direct send
+// works, but the review card still shows up".
+check(
+  'direct mode closes its panel after sending',
+  /owned\.sendMode !== 'direct'[\s\S]{0,900}closePanel\(\)\s*\n\s*\}, 60\)/.test(clientSource),
+  'a lingering panel swallows the composer send arrow for the next message',
+)
+check(
+  'the panel closes only after a successful submit',
+  /try \{\s*\n\s*submit\(\)\s*\n\s*\} catch \{[\s\S]{0,200}return\s*\n\s*\}\s*\n\s*closePanel\(\)\s*\n\s*\}, 60\)/.test(clientSource),
+  'a refused submit must leave the panel up so the user can send by hand',
+)
+// Review mode must KEEP its panel: that panel is the decision point.
+check(
+  'review mode does not auto-close its panel',
+  !/owned\.sendMode !== 'review'[\s\S]{0,200}closePanel\(\)/.test(clientSource),
+  'closing the review panel would remove the confirmation step',
 )
 
 // ---------------------------------------------------------------------------
