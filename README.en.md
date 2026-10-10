@@ -150,11 +150,21 @@ declaration that most people set once and never touch, so they do not take space
 in a menu whose job is choosing a character. When something *is* overridden, the
 collapsed row names it, so a choice you forgot about cannot hide behind the fold.
 
+**The rewrite column is editable.** What the model wrote is a starting point,
+not a verdict: fixing a dropped identifier or a tone that is slightly off by hand
+is faster than another round trip. Once you edit it the panel says so, and
+**Send** and **Fill** both carry *your* text.
+
+**While the panel is open, the composer's send arrow is deliberately inert.** The
+panel is the decision point; pressing send now would either push the un-reviewed
+draft out or start a second rewrite of the same draft. Pick an action in the
+panel, or close it, and the composer comes back.
+
 The rewrite runs **once per draft**: after a rewrite lands, sending goes through
 as-is instead of rewriting the output again. Editing the draft re-arms it.
 
-Your draft is preserved: *Restore original* puts it back, and *Fill only* puts
-the rewrite in the composer without sending.
+Your draft is preserved: *Restore original* puts it back, and also rewinds the
+"already rewritten" memory, so a rewrite you cancelled can be run again.
 
 ### How send interception works, and its one risk
 

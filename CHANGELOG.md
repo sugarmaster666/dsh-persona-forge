@@ -6,6 +6,39 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-10-10
+
+### Added
+
+- **The rewrite column is editable.** What the model wrote is a starting point,
+  not a verdict: fixing a dropped identifier or a tone that is slightly off by
+  hand is faster than another round trip. **Send** and **Fill** carry the
+  edited text, and the panel says when the text differs from what the model
+  produced, so nothing goes out silently different.
+
+- **While the review panel is open, the composer's send arrow is inert.** The
+  panel is the decision point. Pressing send with it up either pushed the
+  un-reviewed draft out or started a **second** rewrite of the same draft —
+  the duplicate that appeared once the panel was on screen. Closing the panel,
+  or choosing an action in it, re-arms the composer. Direct-send mode is
+  unaffected: it submits programmatically rather than through a gesture.
+
+### Removed
+
+- **The "Fill only" button, from the normal flow.** With an editable result,
+  writing the text into the composer without sending is the same act as
+  reviewing it, so the button was a second control for one idea. It survives
+  only for a shell that exposes no submit action, where it is the sole way to
+  get the text out.
+
+### Fixed
+
+- **An edited result is no longer rewritten again.** `apply` recorded only the
+  untouched original as "already rewritten", so sending a hand-edited result
+  from the composer came back as a fresh rewrite of the user's own edit. Any
+  settled text is now recorded. *Restore original* still deletes the memory
+  outright, because that is a rewind rather than a settled result.
+
 ## [0.3.5] - 2026-10-10
 
 ### Fixed
@@ -461,7 +494,8 @@ First public release.
   tools, and never enters the session log. What the session records is the text
   the user actually sent.
 
-[Unreleased]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.3.5...HEAD
+[Unreleased]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.3.5...v0.4.0
 [0.3.5]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.3.4...v0.3.5
 [0.3.4]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.3.3...v0.3.4
 [0.3.3]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.3.2...v0.3.3
