@@ -145,18 +145,29 @@ you want them gone.
 3. With a character selected, the composer's normal **Send** button — or
    **Enter** — *is* the rewrite trigger.
 
-**Intensity and send mode belong to the CHARACTER, not to the session.** "硬邦邦
-always goes out Zealot, un-reviewed" is a fact about that character rather than a
-temporary choice in one conversation — so configure it once and picking it in
-another session gives you the same settings. Switching character **re-reads that
+**Everything that configures a character lives in its own "Settings for <name>"
+fold, and follows the CHARACTER rather than the session.** "硬邦邦 always goes out
+Zealot, un-reviewed" is a fact about that character rather than a temporary
+choice in one conversation — so configure it once and picking it in another
+session gives you the same settings. Switching character **re-reads that
 character's own settings** rather than carrying the previous one's intensity
 across.
 
-**More settings**, at the bottom of the menu, is folded shut by default. It holds
-**rewrite mode**, **fidelity** and **Open card directory** — per-session OVERRIDES of a card's own
-declaration that most people set once and never touch, so they do not take space
-in a menu whose job is choosing a character. When something *is* overridden, the
-collapsed row names it, so a choice you forgot about cannot hide behind the fold.
+That fold holds four things:
+
+| | |
+|---|---|
+| **Intensity** | Light · Medium · Strong · Zealot |
+| **Send mode** | Review first / Send directly |
+| **Rewrite mode** | Card default / Model rewrite / Template — each option says what it actually does |
+| **Fidelity** | Only when the card is `strategy` |
+
+The folded row itself **summarises the current settings**, so you can see what a
+character is set to without opening it.
+
+**The card directory has exactly one entry point: the settings page.** It is not
+in the rewrite menu — it is occasional housekeeping, and it should not sit in the
+path of choosing a character.
 
 **The rewrite column is editable.** What the model wrote is a starting point,
 not a verdict: fixing a dropped identifier or a tone that is slightly off by hand
@@ -238,9 +249,9 @@ in makes the character appear without a restart**.
 ~/.dsh/persona-cards/<id>.yml
 ```
 
-Use the 🎭 menu's *More settings → Open card directory*, or the settings page, to
-get there. You can also create and edit cards entirely in **Settings → Persona**;
-that writes the same files.
+Use *Open directory* in **Settings → Persona** to get there (the rewrite menu no
+longer carries an entry). You can also create and edit cards entirely in
+**Settings → Persona**; that writes the same files.
 
 On first run the bundled cards are **copied into your card directory** so the
 folder is a usable starting point. A copy shadows the bundled card of the same
@@ -411,8 +422,9 @@ ever narrowed, never widened:**
   author's decision, not something to grant with a click on the way to Send. To
   widen, edit the card.
 
-The control appears under *More settings*, and **only when the card is
-`strategy`**. On a `style` card it is not rendered at all: both options would
+The control appears in the character's own settings fold (*Settings for <name>*),
+and **only when the card is `strategy`**. On a `style` card it is not rendered at
+all: both options would
 resolve identically there, and showing a control that cannot do anything — plus a
 paragraph explaining why the other one is refused — is worse than showing
 nothing. The server enforces the same rule, so the UI never offers a control it

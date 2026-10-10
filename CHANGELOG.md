@@ -6,6 +6,34 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.5.1] - 2026-10-10
+
+### Changed
+
+- **"More settings" is gone; everything it held moved into the character's own
+  fold.** Having two folds split one idea across two places — intensity and send
+  mode under the character, rewrite mode and fidelity somewhere else — so
+  **rewrite mode** and **fidelity** now sit in the same **"Settings for
+  <name>"** fold as the rest. The folded row's summary names the intensity, the
+  send mode and the rewrite mode, so the whole configuration is legible without
+  opening it.
+
+- **Every rewrite mode now says what it does.** The segmented control named
+  three options and explained none of them, so the difference between a model
+  rewrite and a template was something you had to guess:
+
+  - *Card default* — use whatever this card declares on the settings page.
+  - *Model rewrite* — calls the model to rewrite your draft in the character's
+    voice. Most flexible; costs one model call.
+  - *Template* — fills your draft into the card's preset template with no model
+    call. No latency, no tokens, but the voice is fixed.
+
+### Removed
+
+- **"Open card directory" left the rewrite menu.** The settings page already has
+  an *Open directory* button, so the menu row was a second door to the same room
+  — and it put occasional housekeeping in the path of choosing a character.
+
 ## [0.5.0] - 2026-10-10
 
 ### Changed
@@ -549,7 +577,8 @@ First public release.
   tools, and never enters the session log. What the session records is the text
   the user actually sent.
 
-[Unreleased]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.5.1...HEAD
+[0.5.1]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.4.1...v0.5.0
 [0.4.1]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.3.5...v0.4.0
