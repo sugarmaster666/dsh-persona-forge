@@ -6,6 +6,40 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.3.5] - 2026-10-10
+
+### Fixed
+
+- **The same sentence typed twice is rewritten both times.** The send guard
+  skipped a rewrite when the draft matched the last rewrite's result **or** its
+  original text. Restoring the original already clears that memory, so matching
+  `original` bought nothing and silently disabled the persona for any repeated
+  draft — type "讲个笑话", send it, type it again, and it went out
+  un-rewritten.
+
+- **Interception can no longer disarm itself.** The send listeners were bound
+  to the composer card, found through the plugin's own button. A card that was
+  not found meant the whole feature silently did not arm — the plugin looked
+  dead, with no error anywhere. The listeners now sit on `window` and each
+  guard scopes its event to the composer card it belongs to, so a miss costs
+  one event rather than the feature.
+
+### Changed
+
+- **The send-gesture decision is now a pure function** (`decideSend`) returning
+  `{ action, reason }`, and the client exposes `__internals` so the check suite
+  can boot the real bundle and drive it. This decision fails **silently** in
+  both directions — swallow a gesture that should have been sent and the
+  message vanishes; let one through that should have been rewritten and the
+  persona quietly does nothing — and neither throws, so the only symptom is "it
+  stopped working". Thirteen behavioural cases now cover it, replacing
+  source-shape assertions. The repeated-draft case was confirmed to fail
+  against the old predicate.
+
+  The pure-guard-plus-seam approach follows
+  [`dsh-prompt-hardener`](https://github.com/ffyfox/dsh-prompt-hardener), which
+  reached the same conclusion about this class of silent failure.
+
 ## [0.3.4] - 2026-10-10
 
 ### Fixed
@@ -427,7 +461,8 @@ First public release.
   tools, and never enters the session log. What the session records is the text
   the user actually sent.
 
-[Unreleased]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.3.4...HEAD
+[Unreleased]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.3.5...HEAD
+[0.3.5]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.3.4...v0.3.5
 [0.3.4]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.3.3...v0.3.4
 [0.3.3]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.3.2...v0.3.3
 [0.3.2]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.3.1...v0.3.2
