@@ -6,6 +6,34 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.6.3] - 2026-10-10
+
+### Fixed
+
+- **The character may be on EITHER side of the conversation, and the prompts no
+  longer pretend otherwise.** Both the rewrite prompt and the card generator
+  asserted flatly that *the character is the ASSISTANT's identity*. That is false
+  for half the cards, and the bundled set proves it:
+
+  | Card | Who is the character |
+  |---|---|
+  | 万机之神 · 欧姆弥赛亚 | the **AI** — the user addresses it as a petitioner |
+  | 肌肉集团 · 硬邦邦 | the **user** — "**the user is** the client", addressing their own team |
+
+  The rewrite prompt now states both cases, tells the model to take the direction
+  from the card's style text, and defines the assistant-side default for a card
+  that is genuinely silent. The generator is told the same, and takes the
+  direction from the idea it is handed.
+
+- **The AI-draft direction note no longer states the wrong rule.** It said "你是
+  对角色说话的那个人，**不是角色本身**" — an absolute that contradicts 硬邦邦,
+  where you *are* the character. It now says the character can be on either side
+  and that picking one and saying so is all that is required.
+
+  The brief example and description keep asking for the same three things (who
+  the AI plays, who you are, how they talk) — the ambiguity was the bug, not the
+  two-sidedness.
+
 ## [0.6.2] - 2026-10-10
 
 ### Fixed
@@ -690,7 +718,8 @@ First public release.
   tools, and never enters the session log. What the session records is the text
   the user actually sent.
 
-[Unreleased]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.6.2...HEAD
+[Unreleased]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.6.3...HEAD
+[0.6.3]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.6.2...v0.6.3
 [0.6.2]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.6.0...v0.6.2
 [0.6.0]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.5.2...v0.6.0
 [0.5.2]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.5.1...v0.5.2

@@ -322,14 +322,17 @@ do not have to press a button to discover it.
 > the AI plays a grumpy but utterly reliable old lighthouse keeper, and I am his
 > apprentice; he speaks in short sentences and nautical metaphors
 
-**Why the example is shaped like that:** a character card describes the **AI's
-identity**, and the message being rewritten is always **yours**. You are the one
-speaking *to* the character, not the character itself. Leave that implicit and
-the generated card has the AI speaking as the character, when the correct
-behaviour is you addressing it as an apprentice, a petitioner or a subordinate.
-Both bundled cards state the direction explicitly (欧姆弥赛亚 is "a supplicant's
-prayer to the Machine God"; 硬邦邦 is "**the user** is the client"), and the AI
-draft is generated to the same requirement.
+**Why the example is shaped like that:** a character card describes **who is
+speaking**, and that is **your choice** — the character can be on either side:
+
+| | Character is the AI | Character is you |
+|---|---|---|
+| Who speaks | You speak **to** the character (petitioner, client, subordinate) | You **are** the character, speaking in its voice to the AI |
+| Bundled example | 欧姆弥赛亚: "we are your humble believers" | 硬邦邦: "**the user is** the client" |
+
+Both are valid. The only mistake is **not saying which** — a card with an
+implicit direction leaves the model guessing, and guessing wrong inverts the
+whole relationship. Pick a side, say so in your idea, and the AI drafts to it.
 
 **The AI** then fills the form by the character-card fields: a name, an icon, a
 description, the style text, and the **conversion examples for all four
@@ -432,12 +435,15 @@ examplesByIntensity:
 
 ### The two rules that make a card work
 
-**1. State the speaker direction.** The character is the *assistant's*
-identity, but the text being rewritten is *yours*. So the rewrite must speak in
-your voice — a petitioner addressing the character, never the character issuing
-orders. This is the single most common way a persona card goes wrong: a card
-that has the god commanding the assistant inverts the relationship and the
-model follows the wrong half of the framing. Write it out explicitly.
+**1. State the speaker direction.** The text being rewritten is always *yours*,
+but **which side the character is on is your decision**: the AI can play the
+character (and you address it as a petitioner, a client or a subordinate), or
+**you can be** the character (speaking in its voice to the AI). Both are valid.
+The only thing that goes wrong is **leaving it unsaid** — an implicit direction
+leaves the model guessing, and guessing wrong inverts the whole relationship (a
+petitioner's prayer comes out as the god issuing orders). Write it out
+explicitly. The two bundled cards take one side each: 欧姆弥赛亚 is "the user is
+a believer, the AI is the Machine God"; 硬邦邦 is "**the user is** the client".
 
 **2. Make your examples preserve technical facts.** Examples are the strongest
 style anchor, and the model imitates them — including their mistakes. If an
