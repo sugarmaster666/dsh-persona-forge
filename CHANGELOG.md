@@ -6,10 +6,46 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.3.3] - 2026-10-09
+
 ### Fixed
 
+- **A rewrite now runs on the model you picked, even before you send with
+  it.** Switching models in the composer and then rewriting used the
+  **previous** model: the route came only from the session's last request
+  header, which does not advance until a message is actually sent. Observed
+  live as the composer showing `hy4-preview` while the rewrite ran on a stale
+  `workbuddy-xdpool-global / deepseek-v4.1-flash` route.
+
+  The host's own precedence, in `api-session`'s `selectionFor`, is
+  **pending → request header → harness default**; the plugin implemented only
+  the last two. It now reads the `modelSelection` projection's `pending` first,
+  so a dropdown pick takes effect immediately. Every step is still optional and
+  falls through to the next, so a harness without that projection behaves
+  exactly as before.
+
+- **A rewrite whose model never answers now fails instead of hanging
+  forever.** `for await (const chunk of llm.stream(...))` only exits when the
+  adapter stops yielding. A provider that accepts the request and then sends
+  nothing — a rate-limited model — yields no chunk, so the 120s deadline's
+  `abort()` was invisible to the loop and the call never returned: the panel
+  spun with no result, no error, and no timeout.
+
+  Each pull is now raced against the deadline, so the loop leaves on its own
+  and reports `TIMEOUT` instead of waiting on a stream that will never speak.
+  The stream is abandoned rather than drained, because draining a wedged
+  provider is the hang this guards against.
+
+  Two regression tests cover both, and both were confirmed to fail against the
+  old code: the route test goes red, and the deadline test hangs the suite
+  outright (`Detected unsettled top-level await`) — the reported symptom.
+
+## [0.3.2] - 2026-10-09
+
+### Changed
+
 - **The rewrite stops naming a reasoning effort, so it works again on routes
-  that declare none.** A earlier attempt to speed slow rewrites up pinned
+  that declare none.** An earlier attempt to speed slow rewrites up pinned
   `reasoningEffort: 'low'`; on `workbuddy-xdpool` / `hy4-preview` every rewrite
   then failed outright with
   `does not support reasoning effort "low"`.
@@ -369,7 +405,9 @@ First public release.
   tools, and never enters the session log. What the session records is the text
   the user actually sent.
 
-[Unreleased]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.3.1...HEAD
+[Unreleased]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.3.3...HEAD
+[0.3.3]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.3.2...v0.3.3
+[0.3.2]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.2.1...v0.3.0
 [0.2.1]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.2.0...v0.2.1

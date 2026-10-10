@@ -279,12 +279,18 @@ description, and the **conversion examples for all four intensity levels**.
 
 | Case | Which model |
 |---|---|
-| The **rewrite** from the 🎭 menu | **Follows the current session** (the provider/model of its last request header) |
+| The **rewrite** from the 🎭 menu | **Follows the model the current session is using** — preferring the one you have just **picked in the model dropdown** (even before you send with it), then the provider/model of the session's last request |
 | **AI draft** in the settings page | The **harness default model** — because `settings.section` receives only `{ close }` from the shell and therefore **has no session id to follow** |
 
 These are usually the same model (the default is usually what the session is
 using), but **not guaranteed**: if you switch models inside a session, the
 settings page's draft still uses the default.
+
+> The rewrite reads the host's own precedence: **pending pick → last request
+> header → harness default**. So changing the model in the dropdown takes effect
+> immediately, with no message to send first. Reading the request header alone
+> sent a rewrite to the **previous** model whenever you had switched and not yet
+> spoken — that was a bug, and it is fixed.
 
 > What is followed is the **provider / model**; the **reasoning depth is never
 > specified explicitly**. The rewrite sends no `reasoningEffort` field and lets
