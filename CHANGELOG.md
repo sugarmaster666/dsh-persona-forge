@@ -6,6 +6,31 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.6.4] - 2026-10-10
+
+### Changed
+
+- **The AI-draft box stopped saying the same thing three times.** The direction
+  rule was carried by the placeholder, restated in the description ("who the AI
+  plays, who you are, how they talk"), and then explained again in a paragraph
+  above the button. Three tellings of one instruction is not emphasis, it is
+  noise.
+
+  The paragraph is gone. The **placeholder** keeps the rule — it is the strongest
+  teaching signal in the box, and it demonstrates the direction in the shape of a
+  real example rather than describing it. The description is back to what the
+  form does: which card fields the AI fills.
+
+  The prompt layer still enforces the direction, and the card-authoring section
+  of the README still explains both sides in full; that is where an author
+  writing a card by hand needs it.
+
+### Added
+
+- **A check against restating the rule.** The direction must not reappear as a
+  separate paragraph, and the description must not repeat the placeholder. The
+  regression was confirmed to fail the suite.
+
 ## [0.6.3] - 2026-10-10
 
 ### Fixed
@@ -718,7 +743,8 @@ First public release.
   tools, and never enters the session log. What the session records is the text
   the user actually sent.
 
-[Unreleased]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.6.3...HEAD
+[Unreleased]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.6.4...HEAD
+[0.6.4]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.6.3...v0.6.4
 [0.6.3]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.6.2...v0.6.3
 [0.6.2]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.6.0...v0.6.2
 [0.6.0]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.5.2...v0.6.0

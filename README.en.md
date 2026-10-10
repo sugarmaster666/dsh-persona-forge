@@ -322,18 +322,6 @@ do not have to press a button to discover it.
 > the AI plays a grumpy but utterly reliable old lighthouse keeper, and I am his
 > apprentice; he speaks in short sentences and nautical metaphors
 
-**Why the example is shaped like that:** a character card describes **who is
-speaking**, and that is **your choice** — the character can be on either side:
-
-| | Character is the AI | Character is you |
-|---|---|---|
-| Who speaks | You speak **to** the character (petitioner, client, subordinate) | You **are** the character, speaking in its voice to the AI |
-| Bundled example | 欧姆弥赛亚: "we are your humble believers" | 硬邦邦: "**the user is** the client" |
-
-Both are valid. The only mistake is **not saying which** — a card with an
-implicit direction leaves the model guessing, and guessing wrong inverts the
-whole relationship. Pick a side, say so in your idea, and the AI drafts to it.
-
 **The AI** then fills the form by the character-card fields: a name, an icon, a
 description, the style text, and the **conversion examples for all four
 intensity levels**.
