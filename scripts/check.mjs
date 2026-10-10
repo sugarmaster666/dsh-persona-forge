@@ -746,6 +746,51 @@ check(
   'sending the rewrite itself must still be recognised as already rewritten',
 )
 
+// The "one wedged rewrite poisons every later one" bug.
+//
+// The panel is a single shared surface, but the guards around it must be
+// PER SESSION. `start()` and `runRewrite()` used the global panel state, so a
+// rewrite stuck at `loading` in one session silently swallowed every later
+// rewrite in every session: no error, no rewrite, and — because the send
+// gesture was still intercepted — no send either. The user sees the plugin
+// stop working entirely, which is what "it just sends my text now" was.
+//
+// These are structural guards, not behavioural ones: the client half is a
+// browser bundle with no build step, so it cannot be imported and driven from
+// this suite. The host half carries the behavioural tests.
+check(
+  'runRewrite refuses only a concurrent run for the SAME session',
+  /if \(inFlight !== null && inFlight\.phase === 'loading' && inFlight\.sessionKey === options\.sessionKey\) return/.test(clientSource),
+  'a global loading guard lets one wedged session block all others',
+)
+check(
+  'start() guards on the per-session busy, not the shared panel',
+  /if \(busyHere\) return/.test(clientSource) && !/const start = useCallback\(\(\) => \{\s*\n\s*if \(busy\) return/.test(clientSource),
+  'the global `busy` here is the silent swallow that killed later rewrites',
+)
+check(
+  'the send interceptor and start() agree on which busy they mean',
+  /if \(snapshot\.busy === true\)/.test(clientSource) && /busy: busyHere/.test(clientSource),
+  'intercepting on a per-session busy while start() refuses on a global one loses the gesture',
+)
+// A panel that never leaves `loading` blocks that session forever, so the
+// client must not depend on the host answering to become usable again.
+check(
+  'a rewrite watchdog settles the panel without the host',
+  /CLIENT_REWRITE_WATCHDOG_MS/.test(clientSource) && /window\.setTimeout\(\(\) => \{/.test(clientSource),
+  'if the host never answers, the panel must still leave loading',
+)
+check(
+  'the watchdog is cleared on both settle paths',
+  (clientSource.match(/window\.clearTimeout\(watchdog\)/g) ?? []).length === 2,
+  'a leaked watchdog would overwrite a settled panel with a bogus timeout error',
+)
+check(
+  'the watchdog timeout has copy in both locales',
+  (clientSource.match(/'error\.timeout':/g) ?? []).length >= 4,
+  'a raw code would reach the panel',
+)
+
 // The composer menu is a CHARACTER PICKER first. Per-session overrides of a
 // card's own declaration are set once and then forgotten, so they must not sit
 // flat beside the picker giving it five equal-weight rows and 248 characters of
