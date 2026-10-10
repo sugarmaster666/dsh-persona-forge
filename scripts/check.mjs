@@ -529,9 +529,36 @@ const wellFormed = JSON.stringify({
   // Recovery must not invent an object out of unrelated text.
   check('prose with no object is rejected', parseCardDraft('Sorry, I cannot help with that.').error !== undefined)
   // A malformed example is dropped, not turned into a half-example that would
-  // teach the model a broken format.
-  const withJunkExample = parseCardDraft(JSON.stringify({ id: 'x-card', name: 'X', style: 'Speak plainly.', examples: [{ from: 'a', to: 'b' }, { from: '', to: 'c' }, 'nonsense'] }))
+  // teach the model a broken format. The legacy flat list is still read.
+  const withJunkExample = parseCardDraft(JSON.stringify({
+    id: 'x-card', name: 'X', style: 'Speak plainly.',
+    examples: [{ from: 'a', to: 'b' }, { from: '', to: 'c' }, 'nonsense'],
+    examplesByIntensity: {
+      light: [{ from: 'a', to: 'b' }],
+      medium: [{ from: 'a', to: 'b' }],
+      strong: [{ from: 'a', to: 'b' }],
+      zealot: [{ from: 'a', to: 'b' }],
+    },
+  }))
   check('a malformed example is dropped, not repaired', withJunkExample.document?.examples?.length === 1, JSON.stringify(withJunkExample.document?.examples))
+
+  // A card must carry ALL FOUR intensity sets. This is what a truncated
+  // generation looks like: the model runs out of output budget part-way through
+  // `examplesByIntensity`, the longest field and the one written last. Accepting
+  // the partial card produced a form that looked fine and a card whose voice
+  // silently vanished on two of four settings.
+  const twoRungs = JSON.stringify({
+    id: 'x-card', name: 'X', style: 'Speak plainly.',
+    examplesByIntensity: { light: [{ from: 'a', to: 'b' }], medium: [{ from: 'a', to: 'b' }] },
+  })
+  const partial = parseCardDraft(twoRungs)
+  check('a card missing intensity sets is refused', partial.error !== undefined, JSON.stringify(partial.document?.examplesByIntensity))
+  check(
+    'the refusal names the missing levels',
+    typeof partial.error === 'string' && partial.error.includes('strong') && partial.error.includes('zealot'),
+    String(partial.error),
+  )
+  check('a card with no intensity sets at all is refused', parseCardDraft(JSON.stringify({ id: 'x-card', name: 'X', style: 'S' })).error !== undefined)
 }
 check('the draft prompt states the speaker direction', CARD_DRAFT_SYSTEM.includes('speaker direction'))
 // The generator must not hardcode the direction either: it has to take it from

@@ -737,9 +737,22 @@ const draftedCard = JSON.stringify({
 })
 llm.setAnswer(draftedCard)
 {
+  const draftCallsBefore = llm.calls.length
   const drafted = await post('/persona-forge/cards/draft', { brief: '一个暴躁但可靠的老灯塔守夜人', sessionId: 'session-1' })
   check('the draft route answers 200', drafted.status === 200, JSON.stringify(drafted.body))
   check('the draft names the model it used', drafted.body?.value?.model === 'stub-model', JSON.stringify(drafted.body?.value?.model))
+  // The output budget must fit a COMPLETE card. The bundled cards are the
+  // specification: each is ~1700 characters of CJK body, which is well over 2000
+  // tokens once the JSON wrapper and four intensity sets are counted. At 2048 the
+  // model ran out of budget part-way through `examplesByIntensity` — the longest
+  // field, written last — so the generation either failed outright or came back
+  // with rungs silently missing.
+  const draftCall = llm.calls[draftCallsBefore]
+  check(
+    'the draft asks for enough output tokens for a whole card',
+    typeof draftCall?.maxTokens === 'number' && draftCall.maxTokens >= 4096,
+    `a card needs more than the rewrite's own 4096 budget in practice; got ${String(draftCall?.maxTokens)}`,
+  )
   check('the drafted card carries all four intensity sets',
     ['light', 'medium', 'strong', 'zealot'].every((level) => drafted.body?.value?.card?.examplesByIntensity?.[level]?.length > 0),
     JSON.stringify(Object.keys(drafted.body?.value?.card?.examplesByIntensity ?? {})))
