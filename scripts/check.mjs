@@ -622,6 +622,32 @@ section('route resolution order')
 }
 
 // ---------------------------------------------------------------------------
+section('docs')
+
+// The READMEs are the plugin's front door, and two things in them rot silently:
+// the status line drifts behind the actual version, and the inspiration link
+// disappears in a rewrite that did not know it mattered.
+{
+  const { readFile: readDoc } = await import('node:fs/promises')
+  const { version } = JSON.parse(await readDoc(join(root, 'package.json'), 'utf8'))
+  const minor = `${version.split('.').slice(0, 2).join('.')}.x`
+  for (const file of ['README.md', 'README.en.md']) {
+    const doc = await readDoc(join(root, file), 'utf8')
+    check(`${file} states the current minor version`, doc.includes(`\`${minor}\``), `want ${minor}`)
+    check(
+      `${file} credits the inspiration`,
+      doc.includes('BV1Ata26pE92') && doc.includes('身居幻想乡の长乐安生'),
+      'the video is where this project came from; losing the link loses the point',
+    )
+    check(
+      `${file} names the target model`,
+      /DeepSeek Flash|deepseek flash/i.test(doc),
+      'this is tuned for Flash, and saying so sets the expectation',
+    )
+  }
+}
+
+// ---------------------------------------------------------------------------
 section('client bundle syntax')
 
 const clientSource = await readFile(join(root, 'lib', 'client.js'), 'utf8')
@@ -746,10 +772,16 @@ check(
   'writing to the session key would persist it in the wrong place',
 )
 // Switching character must RE-READ that card's settings, or the previous
-// card's intensity stays on screen and gets written to the new card's key.
+// card's values stay on screen and get written to the new card's key. All four
+// settings are per card now, so all four must be re-read.
 check(
   'switching card re-reads that card\'s settings',
-  /useEffect\(\(\) => \{[\s\S]{0,200}readLocal\(sendModeKey\(cardId\)\)[\s\S]{0,120}readLocal\(intensityKey\(cardId\)\)[\s\S]{0,40}\}, \[cardId\]\)/.test(clientSource),
+  (() => {
+    const effect = /useEffect\(\(\) => \{([\s\S]*?)\}, \[cardId\]\)/.exec(clientSource)
+    if (effect === null) return false
+    const body = effect[1]
+    return ['sendModeKey', 'intensityKey', 'modeKey', 'fidelityKey'].every((key) => body.includes(`readLocal(${key}(cardId))`))
+  })(),
   'without this the previous card settings carry over and get re-saved',
 )
 // Picking a card must NOT close the menu: choosing a character and configuring
@@ -878,18 +910,34 @@ check(
   clientSource.indexOf("t('control.mode')") > clientSource.indexOf('cardCfgOpen'),
   'rewrite mode is a property of the character',
 )
+// Each mode's description is its TOOLTIP, not a paragraph under the row: the
+// fold was drowning in prose, and a control you have already chosen does not
+// need its explanation on screen permanently.
 check(
-  'every rewrite mode carries a description',
-  ['card', 'llm', 'template'].every((mode) => clientSource.includes(`t('control.mode.desc.${mode}')`)),
+  'every rewrite mode carries a tooltip description',
+  ['card', 'llm', 'template'].every((mode) => clientSource.includes(`'control.mode.desc.${mode}'`))
+    && clientSource.includes("title: t(`control.mode.desc."),
   'naming three options without explaining them is a guessing game',
 )
-// A control that cannot do anything should not be on screen. On a voice-only
-// card both fidelity options resolve identically, so the row is only rendered
-// for cards that actually have something to narrow.
+// Fidelity is offered on EVERY card, in both directions. It used to appear only
+// on a strategy card and only ever narrow, which made a choice the settings page
+// has always allowed invisible where the work actually happens.
 check(
-  'fidelity is only offered when the card may add constraints',
-  /selected\?\.fidelity === 'strategy'\s*\n\s*\? \[/.test(clientSource),
-  'on a style card both options are the same thing — that row is a fake choice',
+  'fidelity is offered on every card',
+  !/selected\?\.fidelity === 'strategy'\s*\n\s*\? \[/.test(clientSource),
+  'hiding the control did not remove the capability, only the discoverability',
+)
+check(
+  'fidelity can be set in both directions',
+  clientSource.includes("['style', t('control.fidelity.style')]") && clientSource.includes("['strategy', t('control.fidelity.strategy')]"),
+  'one-way narrowing is what made widening unreachable',
+)
+// Every fidelity option explains itself, and the label carries the tooltip.
+check(
+  'every fidelity option carries a tooltip',
+  ['card', 'style', 'strategy'].every((value) => clientSource.includes(`'control.fidelity.hint.${value}'`))
+    && clientSource.includes("title: t(`control.fidelity.hint."),
+  'a control whose consequence is invisible is a trap',
 )
 // "No persona" is an exit action; listing it first made it the first thing read
 // in a menu whose whole point is choosing a character.

@@ -304,17 +304,27 @@ function lastRewriteSystem() {
     'the narrowed fidelity must reach the prompt',
   )
 }
-// Widening must be refused: a style card cannot be told to start adding
-// behavioural constraints, which would change the request beyond what its
-// author allowed. The request still succeeds, on the card's own terms.
+// Widening is HONOURED too. It was once refused, on the theory that a
+// per-message toggle should not be able to add constraints the card's author
+// never allowed — but the card is the user's own file and the settings page has
+// always let them set `fidelity:` directly, so refusing here only hid the choice
+// where the work happens. What matters is that the choice REACHES the prompt
+// rather than being reported and ignored.
 {
   const widened = await post('/persona-forge/rewrite', { cardId: 'omnissiah', text: 'fix a.js now', sessionId: 'session-1', fidelity: 'strategy' })
-  check('a voice-only card cannot be widened per message', widened.body?.value?.fidelity === 'style', JSON.stringify(widened.body?.value?.fidelity))
+  check('a voice-only card can be widened per message', widened.body?.value?.fidelity === 'strategy', JSON.stringify(widened.body?.value?.fidelity))
   check(
-    'the refusal to widen reaches the prompt too',
-    lastRewriteSystem().includes('STYLE ONLY'),
-    'widening must be silently ignored, not honoured',
+    'the widened fidelity reaches the prompt too',
+    lastRewriteSystem().includes('STRATEGY ALLOWED'),
+    'a fidelity reported but not applied is a setting that does nothing',
   )
+  // And the card's own default still applies when the caller names nothing.
+  const asCard = await post('/persona-forge/rewrite', { cardId: 'omnissiah', text: 'fix a.js now', sessionId: 'session-1' })
+  check('the card default applies when no fidelity is named', asCard.body?.value?.fidelity === 'style', JSON.stringify(asCard.body?.value?.fidelity))
+  check('the card default reaches the prompt', lastRewriteSystem().includes('STYLE ONLY'))
+  // A junk value must not override the card.
+  const junk = await post('/persona-forge/rewrite', { cardId: 'omnissiah', text: 'fix a.js now', sessionId: 'session-1', fidelity: 'nonsense' })
+  check('an unknown fidelity falls back to the card', junk.body?.value?.fidelity === 'style', JSON.stringify(junk.body?.value?.fidelity))
 }
 // Mode override: only honoured when the card can actually satisfy it.
 {
