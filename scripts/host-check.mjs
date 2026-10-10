@@ -110,6 +110,11 @@ const { apply } = await import('../lib/index.js')
 
 const llm = makeLlm('万机之座在上，恳请您为我们编写一个快速排序算法，使重复之数各归其位。')
 const sessionHeader = { config: { provider: 'stub-provider', model: 'stub-model' } }
+// The session's modelSelection projection. `pending` is the dropdown pick that
+// has not been sent with yet; it must WIN over the request header, because the
+// header only advances when a message is actually sent. Mutable so the
+// precedence can be exercised in both directions.
+let sessionPending = null
 // The harness-wide default route. A real profile has this service (the desktop
 // profile configures it), and it is what the settings page's AI draft falls
 // back to, because `settings.section` receives no session id from the shell.
@@ -117,7 +122,18 @@ const sessionHeader = { config: { provider: 'stub-provider', model: 'stub-model'
 let defaultSelection = { provider: 'stub-provider', model: 'stub-model' }
 const services = {
   llm,
-  sessions: { get: (id) => (id === 'session-1' ? { requestHeader: () => sessionHeader } : undefined) },
+  sessions: {
+    get: (id) => (id === 'session-1'
+      ? {
+          requestHeader: () => sessionHeader,
+          // A handle the projection service can key on.
+          sessionId: 'session-1',
+        }
+      : undefined),
+  },
+  sessionProjections: {
+    stateOf: (session, key) => (key === 'modelSelection' ? { lastUsed: null, pending: sessionPending } : undefined),
+  },
   agentDefaultModel: { currentSelection: () => defaultSelection },
   webServer: {
     register(route) {
@@ -224,6 +240,33 @@ check(
   `${rewrite.body?.value?.provider}/${rewrite.body?.value?.model}`,
 )
 check('rewrite reports the card fidelity', rewrite.body?.value?.fidelity === 'style', rewrite.body?.value?.fidelity)
+
+// The live bug: the user picks a new model in the dropdown, then rewrites
+// WITHOUT sending first. The request header still names the previous model, so
+// reading only the header sent the rewrite to the stale route — which was
+// rate-limited, returned no chunks, and hung the panel. `pending` must win.
+{
+  sessionPending = { provider: 'picked-provider', model: 'picked-model' }
+  const picked = await post('/persona-forge/rewrite', { cardId: 'omnissiah', text: '帮我写个快速排序', sessionId: 'session-1' })
+  check(
+    'a pending model pick beats the stale request header',
+    picked.body?.value?.provider === 'picked-provider' && picked.body?.value?.model === 'picked-model',
+    `${String(picked.body?.value?.provider)}/${String(picked.body?.value?.model)}`,
+  )
+  check(
+    'the reported model is the one actually called',
+    llm.calls[llm.calls.length - 2]?.provider === 'picked-provider' || llm.calls[llm.calls.length - 1]?.provider === 'picked-provider',
+    JSON.stringify(llm.calls.slice(-2).map((call) => `${String(call.provider)}/${String(call.model)}`)),
+  )
+  // With no pending pick, the header is still honoured.
+  sessionPending = null
+  const headerAgain = await post('/persona-forge/rewrite', { cardId: 'omnissiah', text: '帮我写个快速排序', sessionId: 'session-1' })
+  check(
+    'with no pending pick the header route is used',
+    headerAgain.body?.value?.provider === 'stub-provider' && headerAgain.body?.value?.model === 'stub-model',
+    `${String(headerAgain.body?.value?.provider)}/${String(headerAgain.body?.value?.model)}`,
+  )
+}
 check('rewrite carries a fact-check verdict', typeof rewrite.body?.value?.factCheck?.state === 'string', JSON.stringify(rewrite.body?.value?.factCheck))
 // The free deterministic check always runs, and it is reported separately from
 // the optional model check so the panel can show a concrete lost token.

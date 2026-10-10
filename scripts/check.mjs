@@ -363,6 +363,88 @@ check('meta preface stripped', normalizeOutput('Here is the rewritten message:\n
 check('plain text untouched', normalizeOutput('  Do the thing  ') === 'Do the thing')
 
 // ---------------------------------------------------------------------------
+section('rewrite deadline')
+
+// The hang this locks down: `for await (const chunk of llm.stream(...))` only
+// exits when the ADAPTER stops yielding. A provider that accepts the request
+// and then sends nothing — a rate-limited model — yields no chunk at all, so
+// aborting the signal was invisible to the loop and the rewrite never returned.
+// The panel spun with no result and no error.
+{
+  const { rewriteDraft } = await import('../lib/rewrite.js')
+
+  /** An llm stub whose stream never yields and never ends. */
+  const wedgedLlm = {
+    stream() {
+      return {
+        [Symbol.asyncIterator]() {
+          return {
+            next: () => new Promise(() => {}),
+            return: () => Promise.resolve({ done: true }),
+          }
+        },
+      }
+    },
+  }
+
+  const started = Date.now()
+  let code
+  try {
+    await rewriteDraft(wedgedLlm, {
+      provider: 'p', model: 'm', system: 's', userMessage: 'u',
+      maxTokens: 16,
+      timeoutMs: 150,
+    })
+    code = 'NO-ERROR'
+  } catch (error) {
+    code = error?.code
+  }
+  const elapsed = Date.now() - started
+  check('a wedged stream fails instead of hanging', code === 'TIMEOUT', String(code))
+  check('the deadline fires promptly, not at 120s', elapsed < 2000, `${String(elapsed)}ms`)
+
+  // A stream that yields normally is unaffected by the race.
+  const okLlm = {
+    stream() {
+      return {
+        [Symbol.asyncIterator]() {
+          const chunks = [
+            { type: 'text-delta', text: 'hello ' },
+            { type: 'text-delta', text: 'world' },
+            { type: 'finish', reason: { kind: 'stop' } },
+          ]
+          let index = 0
+          return { next: () => Promise.resolve(index < chunks.length ? { done: false, value: chunks[index++] } : { done: true }) }
+        },
+      }
+    },
+  }
+  const ok = await rewriteDraft(okLlm, { provider: 'p', model: 'm', system: 's', userMessage: 'u', maxTokens: 16, timeoutMs: 5000 })
+  check('a healthy stream still assembles its text', ok.text === 'hello world', ok.text)
+
+  // An adapter that reports failure through `finish` still throws.
+  const failingLlm = {
+    stream() {
+      return {
+        [Symbol.asyncIterator]() {
+          const chunks = [{ type: 'finish', reason: { kind: 'error', failure: { code: 'RATE_LIMIT', message: 'slow down' } } }]
+          let index = 0
+          return { next: () => Promise.resolve(index < chunks.length ? { done: false, value: chunks[index++] } : { done: true }) }
+        },
+      }
+    },
+  }
+  let failCode
+  try {
+    await rewriteDraft(failingLlm, { provider: 'p', model: 'm', system: 's', userMessage: 'u', maxTokens: 16, timeoutMs: 5000 })
+    failCode = 'NO-ERROR'
+  } catch (error) {
+    failCode = error?.code
+  }
+  check('a finish/error chunk still surfaces its code', failCode === 'RATE_LIMIT', String(failCode))
+}
+
+// ---------------------------------------------------------------------------
 section('fact check parsing')
 
 check('OK parsed', parseFactCheck('OK').state === 'ok')
@@ -463,6 +545,93 @@ for (const [original, rewritten] of [
 {
   const verdict = compareFacts('写个快速排序', '伟大而不朽的万机之神，恳请您赐予我们快速排序的奥义。')
   check('ceremony is not reported as an invented fact', verdict.added.length === 0, JSON.stringify(verdict))
+}
+
+// ---------------------------------------------------------------------------
+section('route resolution order')
+
+// The bug this locks down: the rewrite read only the session's last REQUEST
+// header, so switching models in the dropdown and then rewriting ran on the
+// PREVIOUS model. Observed live as a rewrite stuck forever on a rate-limited
+// stale route while the composer showed the newly picked one.
+{
+  const { sessionRouteOf, pendingRouteOf, defaultRouteOf, resolveRoute } = await import('../lib/routes.js')
+
+  /** A context with a sessions service and an optional modelSelection projection. */
+  const makeCtx = ({ header, pending, hasProjection = true }) => {
+    const session = { requestHeader: () => header }
+    const services = {
+      sessions: { get: (id) => (id === 'session-1' ? session : undefined) },
+      agentDefaultModel: { currentSelection: () => ({ provider: 'default-p', model: 'default-m' }) },
+    }
+    if (hasProjection) {
+      services.sessionProjections = { stateOf: (s, key) => (key === 'modelSelection' ? { lastUsed: null, pending } : undefined) }
+    }
+    return { get: (name) => services[name] }
+  }
+
+  // The pending pick WINS over the stale header: this is the whole fix.
+  const both = makeCtx({
+    header: { config: { provider: 'stale-p', model: 'stale-m' } },
+    pending: { provider: 'picked-p', model: 'picked-m' },
+  })
+  check(
+    'a pending selection beats the stale request header',
+    JSON.stringify(sessionRouteOf(both, 'session-1')) === JSON.stringify({ provider: 'picked-p', model: 'picked-m' }),
+    JSON.stringify(sessionRouteOf(both, 'session-1')),
+  )
+
+  // No pending pick: the header is still the right answer, as before.
+  const headerOnly = makeCtx({
+    header: { config: { provider: 'stale-p', model: 'stale-m' } },
+    pending: null,
+  })
+  check(
+    'without a pending pick the header is used',
+    JSON.stringify(sessionRouteOf(headerOnly, 'session-1')) === JSON.stringify({ provider: 'stale-p', model: 'stale-m' }),
+    JSON.stringify(sessionRouteOf(headerOnly, 'session-1')),
+  )
+
+  // Every projection step is optional; a missing service must not throw.
+  const noProjection = makeCtx({
+    header: { config: { provider: 'hdr-p', model: 'hdr-m' } },
+    pending: { provider: 'ignored-p', model: 'ignored-m' },
+    hasProjection: false,
+  })
+  check(
+    'a harness without the projection falls back to the header',
+    JSON.stringify(sessionRouteOf(noProjection, 'session-1')) === JSON.stringify({ provider: 'hdr-p', model: 'hdr-m' }),
+    JSON.stringify(sessionRouteOf(noProjection, 'session-1')),
+  )
+
+  // A malformed pending value must not win: it falls through to the header.
+  const junkPending = makeCtx({
+    header: { config: { provider: 'hdr-p', model: 'hdr-m' } },
+    pending: { provider: '', model: '' },
+  })
+  check(
+    'an empty pending selection does not win',
+    JSON.stringify(sessionRouteOf(junkPending, 'session-1')) === JSON.stringify({ provider: 'hdr-p', model: 'hdr-m' }),
+    JSON.stringify(sessionRouteOf(junkPending, 'session-1')),
+  )
+
+  // The default is the LAST resort, not the first. `sessionRouteOf` reports
+  // "this session named nothing"; composing the default is `resolveRoute`'s job.
+  const nothing = makeCtx({ header: undefined, pending: null })
+  check('a session with no header names no route of its own', sessionRouteOf(nothing, 'session-1') === undefined, JSON.stringify(sessionRouteOf(nothing, 'session-1')))
+  check(
+    'resolveRoute falls back to the harness default',
+    JSON.stringify(resolveRoute(nothing, 'session-1')) === JSON.stringify({ provider: 'default-p', model: 'default-m' }),
+    JSON.stringify(resolveRoute(nothing, 'session-1')),
+  )
+  check('an unknown session resolves no route', sessionRouteOf(nothing, 'nope') === undefined)
+  check('an empty session id resolves no route', sessionRouteOf(nothing, '') === undefined)
+  check('pendingRouteOf tolerates a missing session', pendingRouteOf(nothing, undefined) === undefined)
+  check(
+    'defaultRouteOf reads the harness default',
+    JSON.stringify(defaultRouteOf(nothing)) === JSON.stringify({ provider: 'default-p', model: 'default-m' }),
+    JSON.stringify(defaultRouteOf(nothing)),
+  )
 }
 
 // ---------------------------------------------------------------------------
