@@ -943,6 +943,30 @@ check(
   clientSource.includes('byIntensityText') && /examplesByIntensity/.test(clientSource),
   'editing a card must not discard its intensity demonstration sets',
 )
+// The SAME trap for every field added since. `save` writes the payload as the
+// whole card rather than merging, so any card field the form does not round-trip
+// is DELETED the moment the user edits anything else. Each must be read into the
+// form AND written back into the payload — checking only that the name appears
+// somewhere would pass on the read alone.
+for (const [label, field] of [
+  ['the second (implementation-detail) example set', 'examplesByIntensityStrategy'],
+]) {
+  check(
+    `the form reads ${label}`,
+    new RegExp(`byIntensityStrategyText|${field}`).test(clientSource),
+    'a field the form cannot show is a field the user cannot trust an edit to keep',
+  )
+  check(
+    `the form writes ${label} back`,
+    new RegExp(`payload\\.${field}\\s*=`).test(clientSource),
+    'read but not written back means the next save deletes it',
+  )
+}
+check(
+  'the form writes the template back for every mode',
+  /else if \(form\.template\.trim\(\) !== ''\) payload\.template = form\.template/.test(clientSource),
+  'an llm card that had a template lost it on the next save',
+)
 // Delete is meaningless on a card whose content still matches the bundle: the
 // file is a seed copy that the next start writes back.
 check(

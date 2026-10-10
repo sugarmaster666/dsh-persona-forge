@@ -6,6 +6,33 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.8.2] - 2026-10-10
+
+### Fixed
+
+- **The card form now shows the second example set and the template.** 0.8.0
+  added both to the card format but left the settings form on the old shape, and
+  `save` writes the payload as the **whole card** rather than merging — so the
+  moment you edited a card's name, its implementation-detail example set was
+  deleted. The form now renders a textarea per intensity level for both sets, and
+  a template field for every mode.
+
+- **A template is no longer lost when saving an llm card.** It was sent only for
+  a template-mode card, so an llm card that had one lost it on the next save —
+  and template mode is offered on every card, which is how that switch ended up
+  silently falling back to a model call.
+
+- **The form's copy matches what the fields now mean:** the second set is labelled
+  "may add implementation detail", and the fidelity hint says the same instead of
+  the retired "behavioural constraints" wording.
+
+### Added
+
+- **A check against this whole class of bug.** For every card field added since,
+  the form must both read it and write it back into the payload — checking only
+  that the name appears somewhere would pass on the read alone, which is exactly
+  how the write-back went missing. Confirmed red when the write-back is removed.
+
 ## [0.8.1] - 2026-10-10
 
 ### Changed
@@ -912,7 +939,9 @@ First public release.
   tools, and never enters the session log. What the session records is the text
   the user actually sent.
 
-[Unreleased]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.8.0...HEAD
+[Unreleased]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.8.2...HEAD
+[0.8.2]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.8.1...v0.8.2
+[0.8.1]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.8.0...v0.8.1
 [0.8.0]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.7.3...v0.8.0
 [0.7.3]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.7.2...v0.7.3
 [0.7.2]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.7.1...v0.7.2
