@@ -326,6 +326,12 @@ do not have to press a button to discover it.
 description, the style text, and the **conversion examples for all four
 intensity levels**.
 
+> **The rewrite is always YOUR message, never the character's line.** If you say
+> "the AI is my mother", the example must be **the child speaking to her mother**
+> (`妈，帮我把标题改成首页好不好？`), **not** the mother speaking
+> (~~`乖，妈帮你把标题改成首页`~~). Get this backwards and the card is useless —
+> the rewrite comes out as the character answering for you.
+
 The result **only fills the form — it is never saved automatically**. Two things
 are deliberately fixed: **fidelity** is always voice-only, and **rewrite mode**
 is always model rewrite. A generated card should not quietly acquire the power to

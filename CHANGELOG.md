@@ -6,6 +6,31 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.7.2] - 2026-10-10
+
+### Fixed
+
+- **AI card drafting no longer writes the character's own line as the rewrite.**
+  Given "the AI is my mother, I am her child", the generator produced examples
+  where the **mother** spoke:
+
+  > `from`: 帮我把标题改成首页
+  > `to`: 乖，妈帮你把标题改成首页。 ← the MOTHER talking
+
+  That is the character answering, not the user asking — the rewrite is always
+  the **user's** message, so the card was unusable and the role was inverted.
+
+  The prompt was the cause: it said the later step rewrites the user's message
+  "into that voice", and that `to` is the request "rewritten in the voice". Both
+  leave *whose* voice open, and the generator resolved it to the character's.
+
+  The generator is now told plainly that **the output is always the user's
+  message and the character's own speech never appears**, with the direction
+  restated for both sides and a **worked wrong/right pair** using exactly this
+  case. The bundled cards already obeyed the rule — in both, `to` is the user
+  speaking (the client, the believer), never the character — so they are cited as
+  the standard.
+
 ## [0.7.1] - 2026-10-10
 
 ### Fixed
@@ -797,7 +822,8 @@ First public release.
   tools, and never enters the session log. What the session records is the text
   the user actually sent.
 
-[Unreleased]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.7.1...HEAD
+[Unreleased]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.7.2...HEAD
+[0.7.2]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.7.1...v0.7.2
 [0.7.1]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.7.0...v0.7.1
 [0.7.0]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.6.4...v0.7.0
 [0.6.4]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.6.3...v0.6.4
