@@ -6,6 +6,33 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-10-10
+
+### Removed
+
+- **The model-based preservation check.** It made a second model call on every
+  rewrite to catch what the free token comparison cannot see — a requirement
+  reworded weaker, a constraint added in prose. It is gone, along with its
+  prompt, its verdict parser and every wire field (`factCheck`, `modelCheck`).
+
+  It doubled the latency and the token cost of every send to re-check what the
+  local comparison answers for nothing, and the settings page never offered a
+  working switch for it — a documented feature with no reachable control. For
+  the residue it was meant to cover, the rewrite column is now editable, which
+  is more direct than another round trip.
+
+  The retired `factCheck` config key is **ignored rather than rejected**, so a
+  profile still carrying it loads unchanged and simply makes no second call.
+
+### Fixed
+
+- **Rewriting in one session no longer makes every other session look busy.**
+  The composer button read the panel's phase **globally**, so while any single
+  session was rewriting, every open composer rendered "改写中…". The panel is one
+  shared surface, so its phase is global — but what the button shows must be
+  scoped to its own session. It now reads the session-filtered panel, the same
+  value the send guards already used.
+
 ## [0.4.0] - 2026-10-10
 
 ### Added
@@ -494,7 +521,8 @@ First public release.
   tools, and never enters the session log. What the session records is the text
   the user actually sent.
 
-[Unreleased]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.4.1...HEAD
+[0.4.1]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.3.5...v0.4.0
 [0.3.5]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.3.4...v0.3.5
 [0.3.4]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.3.3...v0.3.4

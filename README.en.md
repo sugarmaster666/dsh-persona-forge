@@ -196,40 +196,28 @@ message.
 
 ### The preservation check
 
-After each rewrite, a second call on the same model compares the rewrite
-against your original and reports whether technical content survived:
-
 The biggest risk is not a voice that sounds wrong — it is a rewrite that
-**quietly loses your request**. Two layers cover it, and they are complementary
-rather than redundant.
+**quietly loses your request**. The plugin compares the **technical tokens** of
+the draft against the rewrite, in this process: identifiers, file paths,
+versions, numbers, `--flag`s, acronyms like `API`. Anything lost is **named**
+("Lost: a.js").
 
-**Layer 1: the local check — always on, free.** It compares the **technical
-tokens** of the draft against the rewrite, in this process: identifiers, file
-paths, versions, numbers, `--flag`s, acronyms like `API`. Anything lost is
-**named** ("Lost: a.js"). It calls no model, so it costs no tokens and adds no
-latency — and it cannot be turned off.
+It calls **no model**, so it costs no tokens and adds no latency — and it cannot
+be turned off. It always runs.
 
-**Layer 2: the model check — off by default, switchable in the menu.** It makes
-one **extra model call** per rewrite, to see what a token comparison cannot see
-at all:
+**What it cannot see** (and the panel says so, so you do not assume more): a
+requirement reworded into something **weaker** while every word survives, a
+constraint **added in prose**, a quantity written in Chinese words (「两次」), or
+a bare lowercase English word that is not a path, flag or identifier.
 
-- a requirement reworded into something **weaker** (every word survives, the
-  demand does not);
-- a constraint **added in prose**.
+> A second layer once existed: one **extra model call** per rewrite aimed
+> exactly at those cases. It has been **removed** — it doubled the latency and
+> the token cost of every send, and the most common and most damaging failure (a
+> dropped filename, number or version) was already proven for free. For the
+> residue, **the rewrite column is editable**, which is more direct than another
+> round trip.
 
-The cost is doubled latency and doubled tokens, which is why it ships off: the
-most common and most damaging failure — a dropped filename, number or version —
-is already proven for free by layer 1, so paying a model call on every send to
-re-check it is a waste. Turn it on when the drafts are technical enough to
-warrant it.
-
-The switch lives in **Settings → Persona** ("Enable the model check") and is a
-global preference: it answers "do I want to pay for the second call", which is
-decided once rather than re-asked on the way to every send. With it off the panel
-states plainly that the local check ran and spent no tokens, and says what that
-check does **not** cover — a narrow verdict has to declare its own limits.
-
-Both layers are **advisory** and never block a rewrite: they annotate, not stop.
+The check is **advisory** and never blocks a rewrite: it annotates, it does not stop.
 
 ---
 
@@ -440,16 +428,12 @@ Set in the plugin's loader row config:
   name: dsh-persona-forge
   config:
     sendMode: review   # review | direct — the initial composer default
-    factCheck: false   # default for the MODEL check (off by default; see
-                       # "The preservation check"). The local token check does
-                       # not depend on this: it always runs and is free.
     watchCards: true   # reload the catalog when the card directory changes
 ```
 
-`factCheck` controls only the default for **layer 2**; the menu switch overrides
-it per session. Setting it to `true` adds **one extra model call to every
-rewrite** (doubled latency and tokens) and is only worth it when drafts are
-technical enough.
+The technical-token check depends on no configuration: it always runs and is
+free. The retired `factCheck` key is ignored, so a profile still carrying it
+changes nothing.
 
 ---
 
@@ -461,8 +445,8 @@ refused). Mounted under `/persona-forge`.
 
 | Route | Body | Returns |
 |---|---|---|
-| `/persona-forge/cards` | `{}` | `{ cards, diagnostics, directory, sendMode, factCheck, draftModel }` |
-| `/persona-forge/rewrite` | `{ cardId, text, sessionId?, intensity?, mode?, fidelity?, modelCheck? }` | `{ text, provider, model, mode, cardId, fidelity, intensity, elapsedMs, facts, factCheck }` |
+| `/persona-forge/cards` | `{}` | `{ cards, diagnostics, directory, sendMode, draftModel }` |
+| `/persona-forge/rewrite` | `{ cardId, text, sessionId?, intensity?, mode?, fidelity? }` | `{ text, provider, model, mode, cardId, fidelity, intensity, elapsedMs, facts }` |
 | `/persona-forge/cards/save` | `{ card }` | `{ id, path }` |
 | `/persona-forge/cards/delete` | `{ id }` | `{ removed }` |
 | `/persona-forge/cards/reset` | `{ id }` | `{ id }` — replaces the user card with the bundled one |
@@ -506,7 +490,8 @@ npm run check                 # both
 `check.mjs` needs no harness and no model. It covers the built-in YAML reader
 (including its refusals and dump/parse round trips), card normalization, the
 bundled cards' fact preservation, prompt construction, output normalization,
-the fact-check parser, and client-bundle syntax.
+the local fact comparison, route resolution order, the send-gesture decision,
+and client-bundle syntax.
 
 `host-check.mjs` mounts the real plugin entry on a stub Cordis context and
 drives the real HTTP routes over a real socket, with a stubbed `llm` service.
@@ -537,7 +522,7 @@ naming the line.
 | `lib/index.js` | Host entry: card store, directory watcher, route registration |
 | `lib/store.js` | Card loading, normalization, save/delete |
 | `lib/yaml.js` | The built-in YAML subset reader and writer |
-| `lib/prompts.js` | Rewrite system prompt, draft framing, fact-check prompt |
+| `lib/prompts.js` | Rewrite system prompt, draft framing, AI-draft prompt |
 | `lib/rewrite.js` | The model calls and output normalization |
 | `lib/routes.js` | HTTP routes and session-model resolution |
 | `lib/loopback.js` | The loopback trust fence |

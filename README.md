@@ -140,20 +140,15 @@ dsh plugin --profile web remove dsh-persona-forge
 
 ### 技术事实校验
 
-改写最大的风险不是语气不像，而是**把你的需求改没了**。插件用两层检查覆盖它 —— 两层互补，不是重复：
+改写最大的风险不是语气不像，而是**把你的需求改没了**。插件在本地比对草稿和改写结果的**技术记号**：标识符、文件路径、版本号、数字、`--flag`、`API` 这类缩写。丢了哪个就**点名**告诉你（「丢失：a.js」）。
 
-**第一层：本地检查 —— 永远运行，零成本。** 在插件进程里比对草稿和改写结果的**技术记号**：标识符、文件路径、版本号、数字、`--flag`、`API` 这类缩写。丢了哪个就**点名**告诉你（「丢失：a.js」）。它不调用模型，所以不花 token、不加延迟，也**关不掉**。
+它**不调用模型**，所以不花 token、不加延迟，也**关不掉** —— 永远运行。
 
-**第二层：模型校验 —— 默认关闭，菜单里可开。** 每次改写**多调用一次模型**，只看本地检查**根本看不到**的东西：
+**它看不出什么**（面板也会这么写，免得你误以为覆盖了更多）：需求被换个说法**悄悄改弱**（词都还在，但要求变松了）、在正文里**用散文追加**了一条约束、用中文写的数量（「两次」）、不属于路径/flag/标识符的小写英文词。
 
-- 需求被换个说法**悄悄改弱**（词都还在，但要求变松了）；
-- 在正文里**用散文追加**了一条约束。
+> 曾经有过第二层：**每次改写多调用一次模型**来专门查这几件事。已经**移除**了 —— 它让每次发送的延迟和 token 都翻倍，而最常见、最伤人的失败（丢掉文件名 / 数字 / 版本号）本地检查已经免费证明了。剩下的那点残余风险，**改写结果可以直接手动修改**，比多跑一轮更直接。
 
-代价是**延迟和 token 都翻倍**，所以默认关闭：最常见、最伤人的失败（丢掉文件名 / 数字 / 版本号）已经被本地检查免费证明了，为它每次发送都付一次模型调用是浪费。草稿偏技术时再开。
-
-开关在**设置 → 角色扮演**（「开启模型校验」），是个全局偏好 —— 它回答的是「我要不要为第二次调用付费」，一次决定即可，不必在每次发送前重新问一遍。关闭时面板会写明「已做本地检查（不耗 token）」，并说清它**没有**覆盖什么 —— 一个窄的结论必须自己交代边界。
-
-两层都是**建议性**的，绝不阻断改写：只标注，不拦你。
+校验是**建议性**的，绝不阻断改写：只标注，不拦你。
 
 ---
 
@@ -294,12 +289,10 @@ examplesByIntensity:
   name: dsh-persona-forge
   config:
     sendMode: review   # review | direct —— 输入框的初始默认
-    factCheck: false   # 模型校验的默认值（默认关闭，见「技术事实校验」）。
-                       # 本地技术记号检查不受这项控制 —— 它永远运行且免费。
     watchCards: true   # 角色卡目录变化时重载目录
 ```
 
-`factCheck` 只决定**第二层**的默认值；菜单里的开关按会话覆盖它。设成 `true` 会让**每次改写都多一次模型调用**（延迟与 token 翻倍），只有草稿确实偏技术时才值得。
+技术记号检查不受任何配置控制 —— 它永远运行且免费。已废弃的 `factCheck` 键会被忽略（旧的 profile 里留着它不会有任何影响）。
 
 ---
 
@@ -309,8 +302,8 @@ examplesByIntensity:
 
 | 路由 | 请求体 | 返回 |
 |---|---|---|
-| `/persona-forge/cards` | `{}` | `{ cards, diagnostics, directory, sendMode, factCheck, draftModel }` |
-| `/persona-forge/rewrite` | `{ cardId, text, sessionId?, intensity?, mode?, fidelity?, modelCheck? }` | `{ text, provider, model, mode, cardId, fidelity, intensity, elapsedMs, facts, factCheck }` |
+| `/persona-forge/cards` | `{}` | `{ cards, diagnostics, directory, sendMode, draftModel }` |
+| `/persona-forge/rewrite` | `{ cardId, text, sessionId?, intensity?, mode?, fidelity? }` | `{ text, provider, model, mode, cardId, fidelity, intensity, elapsedMs, facts }` |
 | `/persona-forge/cards/save` | `{ card }` | `{ id, path }` |
 | `/persona-forge/cards/delete` | `{ id }` | `{ removed }` |
 | `/persona-forge/cards/reset` | `{ id }` | `{ id }` —— 用内置版本覆盖该用户卡 |
@@ -340,7 +333,7 @@ node scripts/host-check.mjs   # 宿主集成自检：在真实 socket 上挂载�
 npm run check                 # 两者都跑
 ```
 
-`check.mjs` 不需要 harness，也不调用模型。覆盖：内置 YAML 读取器（含其拒绝行为与 dump/parse 往返）、卡片归一化、内置卡的事实保全、提示词构造、输出归一化、事实校验解析、客户端 bundle 语法。
+`check.mjs` 不需要 harness，也不调用模型。覆盖：内置 YAML 读取器（含其拒绝行为与 dump/parse 往返）、卡片归一化、内置卡的事实保全、提示词构造、输出归一化、本地事实比对、路由解析优先级、发送手势判据、客户端 bundle 语法。
 
 `host-check.mjs` 在 stub Cordis 上下文上挂载真实插件入口，用真实 socket 驱动真实 HTTP 路由，`llm` 服务为桩实现。覆盖路由注册、会话模型解析、模板模式、回环防护、保存/删除往返 —— 这些是单元自检够不到的。它把 `DSH_HOME` 指向临时目录，**不会碰你真实的角色卡**。
 
@@ -357,7 +350,7 @@ npm run check                 # 两者都跑
 | `lib/index.js` | 宿主入口：角色卡存储、目录监听、路由注册 |
 | `lib/store.js` | 卡片加载、归一化、保存/删除 |
 | `lib/yaml.js` | 内置 YAML 子集读取器与写出器 |
-| `lib/prompts.js` | 改写系统提示词、草稿包装、事实校验提示词 |
+| `lib/prompts.js` | 改写系统提示词、草稿包装、AI 代填提示词 |
 | `lib/rewrite.js` | 模型调用与输出归一化 |
 | `lib/routes.js` | HTTP 路由与会话模型解析 |
 | `lib/loopback.js` | 回环信任防护 |
