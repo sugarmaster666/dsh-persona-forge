@@ -6,6 +6,33 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.7.3] - 2026-10-10
+
+### Fixed
+
+- **"Constraints too" (fidelity: strategy) actually does something now.** The
+  hard rules said *"never add, remove, widen or reinterpret a requirement"* while
+  declaring themselves an override of **everything, including the character
+  description** — and the `strategy` permission to add behavioural framing was
+  written *before* them. The model obeyed the absolute prohibition, so flipping
+  the control changed nothing in the output: a setting that appeared to work and
+  did nothing.
+
+  The root cause is that **"constraint" was doing two jobs**. A message carries
+  (a) technical content — what is asked, under which files, numbers and limits —
+  and (b) behavioural framing — how the assistant should approach the work. The
+  hard rules now lock (a) absolutely and say explicitly that they do **not**
+  forbid (b); the fidelity block owns (b) and names what it may add.
+
+- **Direct send closes its panel.** The message was sent correctly, but the panel
+  stayed up — and a settled panel sets `panelOpen`, which **swallows the
+  composer's send arrow**. The next thing you typed could not be sent until the
+  panel was dismissed by hand. Reported as "direct send works, but the review
+  card still shows up". Review mode still keeps its panel: that one *is* the
+  decision point.
+
+  A refused submit leaves the panel up, so the text is still reachable by hand.
+
 ## [0.7.2] - 2026-10-10
 
 ### Fixed
@@ -822,7 +849,8 @@ First public release.
   tools, and never enters the session log. What the session records is the text
   the user actually sent.
 
-[Unreleased]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.7.2...HEAD
+[Unreleased]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.7.3...HEAD
+[0.7.3]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.7.2...v0.7.3
 [0.7.2]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.7.1...v0.7.2
 [0.7.1]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.7.0...v0.7.1
 [0.7.0]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.6.4...v0.7.0

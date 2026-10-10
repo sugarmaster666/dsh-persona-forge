@@ -168,9 +168,9 @@ you want them gone.
    - **Review first** — the rewrite appears in the comparison panel below the
      composer; you read it and then press Send there. Your draft is untouched
      until you confirm.
-   - **Send directly** — the rewrite is sent as your message immediately, and
-     the panel stays open afterwards showing exactly what went out, because a
-     sent message cannot be recalled.
+   - **Send directly** — the rewrite is sent as your message immediately, and the
+     panel then **closes itself**. There is nothing left to confirm, and a panel
+     left up would block the next message.
 3. With a character selected, the composer's normal **Send** button — or
    **Enter** — *is* the rewrite trigger.
 
@@ -465,11 +465,28 @@ substance. Run it after editing a card.
 
 | Value | Meaning | Use when |
 |---|---|---|
-| `style` | Voice only. The request and its constraints are untouched. | Default. Almost always this. |
-| `strategy` | The rewrite may **add behavioural constraints** that fit the character. | Deliberate cases — e.g. the bundled *肌肉集团* card, which adds "don't over-plan, don't search, don't ship beginner-tier solutions". |
+| `style` | Voice only. | Default. Almost always this. |
+| `strategy` | The rewrite may **add behavioural framing**. | Deliberate cases — e.g. the bundled *肌肉集团* card, which adds "don't over-plan, don't search, don't ship beginner-tier solutions". |
 
-`strategy` genuinely changes your request, not just its wording. Keep review
-mode on for those cards.
+**"Constraint" means two different things in this document — do not conflate
+them:**
+
+| | What it is | May it change? |
+|---|---|---|
+| **Technical content** | What you are asking for, which file, which number, which limit | **Never, under any setting** |
+| **Behavioural framing** | How the assistant should approach the work — how direct, whether to plan first, what counts as good enough | `strategy` may add it |
+
+What `strategy` adds is the **second** kind, and it **genuinely changes the
+request you send** — it puts something in your message that you did not type. So
+keep **Review first** on for those cards.
+
+> The prompt used to conflate the two: the hard rules said "never add, remove,
+> widen or reinterpret a requirement" while declaring themselves an override of
+> everything *including the character description*, and the `strategy` permission
+> was written before them. The model obeyed the absolute prohibition, so
+> `strategy` was a **no-op** — flipping "Constraints too" in the UI changed
+> nothing about the output. The hard rules now cover technical content only, and
+> say explicitly that they do not forbid behavioural framing.
 
 **Fidelity is a property of the card, but you can override it per character, in
 both directions:**
