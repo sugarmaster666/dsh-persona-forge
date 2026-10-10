@@ -6,6 +6,62 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.6.2] - 2026-10-10
+
+### Fixed
+
+- **The AI-draft example now states the speaker direction.** The placeholder was
+  "一个脾气暴躁但极其可靠的老灯塔守夜人，说话简短、爱用航海比喻" — a character
+  and nothing else. It never said whether **you** play that character or the
+  **AI** does, which is precisely the ambiguity this plugin exists to avoid: the
+  character is the *assistant's* identity, and the message being rewritten is
+  always the *user's*.
+
+  The mismatch was sharpest because the generator's own system prompt **requires**
+  the style field to state the direction explicitly, while the example it was
+  handed omitted it. The example is the strongest teaching signal in that box, so
+  it now demonstrates what it demands:
+
+  > 例如：AI 扮演一位脾气暴躁但极其可靠的老灯塔守夜人，我是他的学徒；他说话简短、爱用航海比喻
+
+  The description asks for the same three things (who the AI plays, who you are,
+  how they talk), and the box carries a standing line stating the rule. Both
+  bundled cards already named it — 欧姆弥赛亚 is "a supplicant's prayer to the
+  Machine God", 硬邦邦 is "**the user** is the client".
+
+### Added
+
+- **Checks pin the direction into the brief.** The placeholder must demonstrate
+  who plays whom and must name the user's own role; the description must ask for
+  it; the rule must be stated in the box; and the copy must carry no markdown,
+  since the shell renders it as plain text. Confirmed red against the old
+  placeholder.
+
+## [0.6.1] - 2026-10-10
+
+### Fixed
+
+- **The AI-draft copy said who does what, and what "the spec" actually is.**
+  It read "用一句话描述角色的思路，AI 会按同一套规范把表单填好" — with no
+  subject, so it was unclear whether *you* describe the character or the AI
+  does, and "同一套规范" pointed at an internal quality standard the user cannot
+  see or act on.
+
+  Both languages now name the actor and the fields: **you** write one sentence
+  about the character, and the AI fills the form by the character-card fields —
+  name, icon, description, style text, and a conversion example set per
+  intensity level. The hint also states the two things a generated card
+  deliberately pins: **fidelity is always voice-only** and **rewrite mode is
+  always model rewrite**, so a generated card never quietly acquires the power
+  to add constraints to your request.
+
+### Added
+
+- **Checks pin that copy to the behaviour.** The description must name the four
+  fields the generator fills and must not fall back to "规范", and the generated
+  card must stay pinned to `fidelity: 'style'` / `mode: 'llm'` with the copy
+  saying so. Confirmed red against the old wording.
+
 ## [0.6.0] - 2026-10-10
 
 ### Changed
@@ -640,7 +696,9 @@ First public release.
   tools, and never enters the session log. What the session records is the text
   the user actually sent.
 
-[Unreleased]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.6.2...HEAD
+[0.6.2]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.6.1...v0.6.2
+[0.6.1]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.5.2...v0.6.0
 [0.5.2]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.5.1...v0.5.2
 [0.5.1]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.5.0...v0.5.1

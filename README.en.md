@@ -317,13 +317,28 @@ draft box sits at the **top of the form that opens**, not as a second competing
 entry on the page. A hint line on the settings page tells you it exists, so you
 do not have to press a button to discover it.
 
-Describe the character in a sentence:
+**You** write one sentence: **who the AI plays, who you are, and how they talk.**
 
-> a grumpy but utterly reliable old lighthouse keeper who speaks in short
-> sentences and nautical metaphors
+> the AI plays a grumpy but utterly reliable old lighthouse keeper, and I am his
+> apprentice; he speaks in short sentences and nautical metaphors
 
-The model fills in the whole card — the style text, a name, an icon, a
-description, and the **conversion examples for all four intensity levels**.
+**Why the example is shaped like that:** a character card describes the **AI's
+identity**, and the message being rewritten is always **yours**. You are the one
+speaking *to* the character, not the character itself. Leave that implicit and
+the generated card has the AI speaking as the character, when the correct
+behaviour is you addressing it as an apprentice, a petitioner or a subordinate.
+Both bundled cards state the direction explicitly (欧姆弥赛亚 is "a supplicant's
+prayer to the Machine God"; 硬邦邦 is "**the user** is the client"), and the AI
+draft is generated to the same requirement.
+
+**The AI** then fills the form by the character-card fields: a name, an icon, a
+description, the style text, and the **conversion examples for all four
+intensity levels**.
+
+The result **only fills the form — it is never saved automatically**. Two things
+are deliberately fixed: **fidelity** is always voice-only, and **rewrite mode**
+is always model rewrite. A generated card should not quietly acquire the power to
+add constraints to your request; raise it by hand if you want it.
 
 **Which model it uses has to be stated precisely:**
 
