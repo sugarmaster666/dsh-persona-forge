@@ -326,16 +326,38 @@ function lastRewriteSystem() {
   const junk = await post('/persona-forge/rewrite', { cardId: 'omnissiah', text: 'fix a.js now', sessionId: 'session-1', fidelity: 'nonsense' })
   check('an unknown fidelity falls back to the card', junk.body?.value?.fidelity === 'style', JSON.stringify(junk.body?.value?.fidelity))
 }
-// Mode override: only honoured when the card can actually satisfy it.
+// Mode override: honoured when the card can satisfy it.
+//
+// Every bundled card now carries a template, so "模板套用" is never a dead switch
+// that silently falls back to a model call — which is what it used to be on
+// every card, since none of them had one.
 {
   const asTemplate = await post('/persona-forge/rewrite', { cardId: 'omnissiah', text: 'fix a.js now', sessionId: 'session-1', mode: 'template' })
   check(
-    'a card with no template refuses a template override',
-    asTemplate.body?.value?.mode === 'llm',
+    'a template override is honoured',
+    asTemplate.body?.value?.mode === 'template',
     JSON.stringify(asTemplate.body?.value?.mode),
+  )
+  check(
+    'template mode substitutes the draft without a model call',
+    String(asTemplate.body?.value?.text ?? '').includes('fix a.js now'),
+    JSON.stringify(asTemplate.body?.value?.text),
   )
   const asLlm = await post('/persona-forge/rewrite', { cardId: 'omnissiah', text: 'fix a.js now', sessionId: 'session-1', mode: 'llm' })
   check('an llm override on an llm card stays llm', asLlm.body?.value?.mode === 'llm', JSON.stringify(asLlm.body?.value?.mode))
+}
+// Every bundled card must be able to honour all three modes and both fidelities,
+// or the UI offers a control that does nothing.
+{
+  const catalog = await post('/persona-forge/cards', {})
+  for (const card of catalog.body?.value?.cards ?? []) {
+    check(`${card.id}: carries a template`, typeof card.template === 'string' && card.template.includes('{{input}}'), card.template ?? 'MISSING')
+    check(
+      `${card.id}: carries a behavioural-framing example set`,
+      ['light', 'medium', 'strong', 'zealot'].every((level) => (card.examplesByIntensityStrategy?.[level] ?? []).length > 0),
+      JSON.stringify(Object.keys(card.examplesByIntensityStrategy ?? {})),
+    )
+  }
 }
 
 // The deterministic check must catch a dropped identifier and say which one.
@@ -728,11 +750,18 @@ const draftedCard = JSON.stringify({
   description: '暴躁但可靠的老守夜人',
   style: '以守夜人的口吻说话。发言者方向：角色是助手身份，改写用用户的语气向角色说话。',
   intensity: 'strong',
+  template: '灯塔在上，守夜人在此。\n{{input}}\n愿潮水替我作答。',
   examplesByIntensity: {
     light: [{ from: '修 a.js 的 bug', to: '修一下 a.js 的 bug 吧。' }],
     medium: [{ from: '修 a.js 的 bug', to: '守夜人，修 a.js 的 bug。' }],
     strong: [{ from: '修 a.js 的 bug', to: '守夜人，趁潮水未退，修了 a.js 的 bug。' }],
     zealot: [{ from: '修 a.js 的 bug', to: '灯塔在上，愿您清除 a.js 的 bug。' }],
+  },
+  examplesByIntensityStrategy: {
+    light: [{ from: '修 a.js 的 bug', to: '修一下 a.js 的 bug 吧，别绕远路。' }],
+    medium: [{ from: '修 a.js 的 bug', to: '守夜人，修 a.js 的 bug，直接找根因。' }],
+    strong: [{ from: '修 a.js 的 bug', to: '守夜人，趁潮水未退修了 a.js 的 bug，别只堵表征。' }],
+    zealot: [{ from: '修 a.js 的 bug', to: '灯塔在上，愿您清除 a.js 的 bug，追至本源。' }],
   },
 })
 llm.setAnswer(draftedCard)

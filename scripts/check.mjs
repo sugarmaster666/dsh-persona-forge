@@ -503,11 +503,18 @@ const wellFormed = JSON.stringify({
   description: '暴躁但可靠的老守夜人',
   style: '以守夜人的口吻说话，发言者方向：角色是助手身份，改写用用户的语气向角色说话。',
   intensity: 'strong',
+  template: '灯塔在上，守夜人在此。\n{{input}}\n愿潮水替我作答。',
   examplesByIntensity: {
     light: [{ from: '修 a.js 的 bug', to: '修一下 a.js 的 bug 吧。' }],
     medium: [{ from: '修 a.js 的 bug', to: '守夜人，修 a.js 的 bug。' }],
     strong: [{ from: '修 a.js 的 bug', to: '守夜人，趁潮水未退，修了 a.js 的 bug。' }],
     zealot: [{ from: '修 a.js 的 bug', to: '灯塔在上，愿您清除 a.js 的 bug。' }],
+  },
+  examplesByIntensityStrategy: {
+    light: [{ from: '修 a.js 的 bug', to: '修一下 a.js 的 bug 吧，别绕远路。' }],
+    medium: [{ from: '修 a.js 的 bug', to: '守夜人，修 a.js 的 bug，直接找根因。' }],
+    strong: [{ from: '修 a.js 的 bug', to: '守夜人，趁潮水未退修了 a.js 的 bug，别只堵表征。' }],
+    zealot: [{ from: '修 a.js 的 bug', to: '灯塔在上，愿您清除 a.js 的 bug，追至本源，勿止于权宜。' }],
   },
 })
 {
@@ -558,9 +565,15 @@ const wellFormed = JSON.stringify({
   // A malformed example is dropped, not turned into a half-example that would
   // teach the model a broken format. The legacy flat list is still read.
   const withJunkExample = parseCardDraft(JSON.stringify({
-    id: 'x-card', name: 'X', style: 'Speak plainly.',
+    id: 'x-card', name: 'X', style: 'Speak plainly.', template: '{{input}}',
     examples: [{ from: 'a', to: 'b' }, { from: '', to: 'c' }, 'nonsense'],
     examplesByIntensity: {
+      light: [{ from: 'a', to: 'b' }],
+      medium: [{ from: 'a', to: 'b' }],
+      strong: [{ from: 'a', to: 'b' }],
+      zealot: [{ from: 'a', to: 'b' }],
+    },
+    examplesByIntensityStrategy: {
       light: [{ from: 'a', to: 'b' }],
       medium: [{ from: 'a', to: 'b' }],
       strong: [{ from: 'a', to: 'b' }],
@@ -574,9 +587,14 @@ const wellFormed = JSON.stringify({
   // `examplesByIntensity`, the longest field and the one written last. Accepting
   // the partial card produced a form that looked fine and a card whose voice
   // silently vanished on two of four settings.
+  const fullStrategy = {
+    light: [{ from: 'a', to: 'b' }], medium: [{ from: 'a', to: 'b' }],
+    strong: [{ from: 'a', to: 'b' }], zealot: [{ from: 'a', to: 'b' }],
+  }
   const twoRungs = JSON.stringify({
-    id: 'x-card', name: 'X', style: 'Speak plainly.',
+    id: 'x-card', name: 'X', style: 'Speak plainly.', template: '{{input}}',
     examplesByIntensity: { light: [{ from: 'a', to: 'b' }], medium: [{ from: 'a', to: 'b' }] },
+    examplesByIntensityStrategy: fullStrategy,
   })
   const partial = parseCardDraft(twoRungs)
   check('a card missing intensity sets is refused', partial.error !== undefined, JSON.stringify(partial.document?.examplesByIntensity))
@@ -585,6 +603,31 @@ const wellFormed = JSON.stringify({
     typeof partial.error === 'string' && partial.error.includes('strong') && partial.error.includes('zealot'),
     String(partial.error),
   )
+  // The behavioural-framing set is required too: it is what the rewriting model
+  // is shown when fidelity is raised, and without it the model invents padding
+  // instead of framing.
+  const noStrategy = parseCardDraft(JSON.stringify({
+    id: 'x-card', name: 'X', style: 'S', template: '{{input}}',
+    examplesByIntensity: fullStrategy,
+  }))
+  check('a card missing the strategy examples is refused', noStrategy.error !== undefined, String(noStrategy.error))
+  check(
+    'the refusal says which SET is missing',
+    typeof noStrategy.error === 'string' && noStrategy.error.includes('examplesByIntensityStrategy'),
+    String(noStrategy.error),
+  )
+  // A template is required for the same reason: template mode is offered on
+  // every card, and a card without one silently falls back to a model call.
+  const noTemplate = parseCardDraft(JSON.stringify({
+    id: 'x-card', name: 'X', style: 'S',
+    examplesByIntensity: fullStrategy, examplesByIntensityStrategy: fullStrategy,
+  }))
+  check('a card with no template is refused', noTemplate.error !== undefined, String(noTemplate.error))
+  const badTemplate = parseCardDraft(JSON.stringify({
+    id: 'x-card', name: 'X', style: 'S', template: 'no placeholder here',
+    examplesByIntensity: fullStrategy, examplesByIntensityStrategy: fullStrategy,
+  }))
+  check('a template without {{input}} is refused', badTemplate.error !== undefined, String(badTemplate.error))
   check('a card with no intensity sets at all is refused', parseCardDraft(JSON.stringify({ id: 'x-card', name: 'X', style: 'S' })).error !== undefined)
 }
 check('the draft prompt states the speaker direction', CARD_DRAFT_SYSTEM.includes('speaker direction'))

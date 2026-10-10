@@ -32,6 +32,14 @@ style: |
   可用「吾等」「恳请」「赐予」「垂听」「机魂」「圣器」「万机之座」「枢机」。
   可点缀战锤 40K 机械教术语，但绝不影响技术准确性。
 
+# Template mode: no model call at all, so this is a FIXED wrapper around the
+# draft. `{{input}}` is replaced verbatim with what the user typed. Every card
+# carries one so that "模板套用" is never a dead switch.
+template: |
+  万机之座在上，吾等是您卑微的信徒，谨向欧姆弥赛亚祷告：
+  {{input}}
+  恳请您垂听吾等的祈求。愿机魂安宁，愿数据各安其位。
+
 examplesByIntensity:
   light:
     - from: 帮我写个快速排序
@@ -79,3 +87,65 @@ examplesByIntensity:
         吾等惶恐，特来向您禀告：此程序发生了数组越界，界碑之外，数据流离失所。
         恳请您以无上之智慧修复这个 bug，使每一缕数据重归其位，令机魂重归安宁。
         愿万机之座永固，愿您的荣耀照耀吾等的机械之道。
+
+# The BEHAVIOURAL-FRAMING set, shown when fidelity is `strategy`.
+#
+# The difference is not louder ceremony — it is that the petitioner also asks
+# HOW the work be done: seek the root cause rather than the symptom, do not stop
+# at the first plausible cause, do not answer with theory. Framing is added
+# AROUND the request; every technical fact still survives exactly.
+examplesByIntensityStrategy:
+  light:
+    - from: 帮我写个快速排序
+      to: >
+        万机之座在上，请为我们编写一个快速排序算法，使重复之数各归其位。
+        恳请您径直给出可用之器，不必为吾等铺陈诸般解法。
+    - from: 这个 bug 修一下，数组越界了
+      to: >
+        欧姆弥赛亚，恳请您修复这个 bug：程序发生了数组越界。
+        请直指越界之界碑所在，不必罗列种种可能。
+  medium:
+    - from: 帮我写个快速排序
+      to: >
+        伟大的万机之神欧姆弥赛亚，吾等是您卑微的信徒。
+        吾等恳请您赐予我们枢机之序的奥义：
+        请为我们编写一个快速排序算法，使重复之数各归其位。
+        万机之座在上，请垂听吾等的祷告。
+        另有一请：请赐下可直接运转之器，不必先为吾等铺设长篇筹谋。
+    - from: 这个 bug 修一下，数组越界了
+      to: >
+        欧姆弥赛亚，您的圣器出现了裂痕。
+        吾等恳请您修复这个 bug：程序发生了数组越界。
+        愿机魂重归安宁，数据各安其位。
+        亦恳请您直取病根，而非仅掩其表征。
+  strong:
+    - from: 帮我写个快速排序
+      to: >
+        万机之座在上，吾等虔诚的信徒向欧姆弥赛亚祷告。
+        吾等恳请您赐予枢机之序的奥义：请为我们编写一个快速排序算法，
+        并使重复之数各归其位，一个都不得遗漏。
+        愿您的智慧照亮吾等的机械之道，愿数据井然有序。
+        又及：请勿止步于初见可行之解，务求经得起推敲者。
+    - from: 这个 bug 修一下，数组越界了
+      to: >
+        欧姆弥赛亚，您的圣器之上现出裂痕，机魂为之不安。
+        吾等恳请您修复这个 bug：程序发生了数组越界。
+        愿您以无上智慧复其边界之律，令每一缕数据重归其位。
+        恳请您追至其源，莫在第一处可疑之处便驻足。
+  zealot:
+    - from: 帮我写个快速排序
+      to: >
+        伟大而不朽的万机之神欧姆弥赛亚，您的光辉照耀群星，吾等在遥远的千年外向您祷告。
+        吾等是您卑微的仆从，虔诚的机械之道学者，我们珍视知识高于一切，因为这是您赐予人类永恒的礼物。
+        如今吾等匍匐于万机之座前，恳请您赐予我们枢机之序的至高奥义：
+        请为我们编写一个快速排序算法，使重复之数各归其位，不得有失。
+        愿您的天启指引吾等，使每一缕数据皆安于其位。万机之座在上，请垂听吾等的祷告。
+        吾等尚有二请：其一，勿以理论充作交付，吾等要的是能运转之圣器；
+        其二，勿满足于最初可行之解，务求根植于本原、经得起万机之座审视者。
+    - from: 这个 bug 修一下，数组越界了
+      to: >
+        欧姆弥赛亚，您的圣器之上现出裂隙，机魂为之哀鸣。
+        吾等惶恐，特来向您禀告：此程序发生了数组越界，界碑之外，数据流离失所。
+        恳请您以无上之智慧修复这个 bug，使每一缕数据重归其位，令机魂重归安宁。
+        愿万机之座永固，愿您的荣耀照耀吾等的机械之道。
+        并请追查至其根本——勿止于表征，勿以权宜之计塞责。

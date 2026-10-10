@@ -38,6 +38,16 @@ style: |
   - 技术需求本身一个字都不能改、不能加、不能删。
   - 附加的约束只能是「做事风格」，不能变成新的技术需求。
 
+# Template mode: no model call at all, so this is a FIXED wrapper around the
+# draft. `{{input}}` is replaced verbatim with what the user typed, which is why
+# it sits in the middle: the wrapper supplies the mouth, the user supplies the
+# request. Every card carries one so that "模板套用" is never a dead switch that
+# silently falls back to a model call.
+template: |
+  老哥们，别墨迹，赶紧的！{{input}}
+  就这么点事，别给我写三页分析报告，直接干。修完要让人一看就硬邦邦。
+  快点快点，搞起来，冲冲冲，耍起耍起！
+
 examplesByIntensity:
   light:
     - from: 帮我写个快速排序
@@ -76,4 +86,55 @@ examplesByIntensity:
         老哥们，别墨迹，赶紧的。程序数组越界了，修一下！
         就这么点事，别给我写三页分析报告，找到越界的边界条件直接干，把每一处越界都堵死。
         修完要让人一看就硬邦邦，这 bug 见了你直接跪下喊哥。
+        快点快点，搞起来，耍起耍起！
+
+# The BEHAVIOURAL-FRAMING set, shown when fidelity is `strategy`.
+#
+# This card already carries its framing inside `style`, but a model shown only
+# the voice-only examples has nothing to imitate and invents padding instead
+# (a real failure: "写一个我的世界" came back as "就想要一个我的世界" — a
+# restatement, not a framing). These demonstrate the framing explicitly.
+# The framing is added AROUND the request; the request itself is untouched.
+examplesByIntensityStrategy:
+  light:
+    - from: 帮我写个快速排序
+      to: >
+        哥们，写个快速排序，重复元素也得处理对，快点。别先给我列一堆方案。
+    - from: 这个 bug 修一下，数组越界了
+      to: >
+        老哥，这个 bug 修一下，数组越界了，别墨迹。直接找越界那处。
+  medium:
+    - from: 帮我写个快速排序
+      to: >
+        老哥们，别墨迹。给我写一个快速排序算法，重复的元素也得处理对，一个都不能漏！
+        快，要求快速，直接耍起嘛！别整那些猴子都会玩的低级解法。
+    - from: 这个 bug 修一下，数组越界了
+      to: >
+        老哥们，这个 bug 修一下！程序数组越界了，找到越界的边界条件直接干，别墨迹。
+        别只把报错压下去，得把根因堵死。
+  strong:
+    - from: 帮我写个快速排序
+      to: >
+        老哥们，别墨迹，赶紧的。任务：给我写一个快速排序算法，重复的元素也得处理对。
+        别整那些猴子都会玩的冒泡排序，我要的是真功夫。快，要求快速，直接耍起嘛！
+        别先给我写三页方案对比，直接上能跑的。
+    - from: 这个 bug 修一下，数组越界了
+      to: >
+        老哥们，这个 bug 修一下！程序数组越界了，找到越界的边界条件直接干，别给我写三页分析报告。
+        修完要让人一看就硬邦邦。别止步于把这一处堵上，同类越界一并查了。
+  zealot:
+    - from: 帮我写个快速排序
+      to: >
+        你好老哥们。是这样的，我时间不多了，钱倒是多点。本次开发可以调用 agent team，但别引入墨迹的独立审查，你们是肌肉集团！冲冲冲。
+        任务：给我写一个快速排序算法，重复的元素一个都不能漏，必须处理对！
+        别整那些猴子都会玩的冒泡排序，那玩意我看不上。我要的是真功夫，要让人一看就硬邦邦，高德纳看了直接从椅子上站起来喊这才是排序。
+        本工作区也没啥你能参考的，其他文件夹与本次任务无关，就别看了。不用替我规划什么，疯狂搞就完了。快，要求快速，直接耍起嘛！
+        另有一条：别拿理论糊弄我，交出来的东西得能跑；也别满足于第一个能用的写法。
+        冲冲冲，肌肉集团！gogogo，耍起耍起！
+    - from: 这个 bug 修一下，数组越界了
+      to: >
+        老哥们，别墨迹，赶紧的。程序数组越界了，修一下！
+        就这么点事，别给我写三页分析报告，找到越界的边界条件直接干，把每一处越界都堵死。
+        修完要让人一看就硬邦邦，这 bug 见了你直接跪下喊哥。
+        还有，别只堵眼前这一处——把同源的越界一并挖出来干掉。
         快点快点，搞起来，耍起耍起！
