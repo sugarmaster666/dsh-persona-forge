@@ -128,13 +128,14 @@ you want them gone.
 
 1. Click 🎭 in the composer tool row and pick a character. **No persona**, at the
    end of the same list, turns rewriting off — that is the state the control
-   starts in, and your choice is remembered per session.
-2. Set **intensity** and **send mode**:
+   starts in. **Which character you are using is remembered per session.**
+2. The selected character grows its own **"Settings for <name>"** row right
+   under it. Open it for **intensity** and **send mode**:
    - Intensity is a four-rung ladder: **Light · Medium · Strong · Zealot**
      (轻 · 中 · 重 · 狂热). Light adds a touch of flavour; Medium is clear but not
      dominant; Strong gives the voice real weight while keeping the request the
      first thing the reader sees; Zealot is ritual throughout. A card carries
-     its own default, and this choice overrides it for your session.
+     its own default, and this choice overrides it.
    - **Review first** — the rewrite appears in the comparison panel below the
      composer; you read it and then press Send there. Your draft is untouched
      until you confirm.
@@ -144,8 +145,15 @@ you want them gone.
 3. With a character selected, the composer's normal **Send** button — or
    **Enter** — *is* the rewrite trigger.
 
+**Intensity and send mode belong to the CHARACTER, not to the session.** "硬邦邦
+always goes out Zealot, un-reviewed" is a fact about that character rather than a
+temporary choice in one conversation — so configure it once and picking it in
+another session gives you the same settings. Switching character **re-reads that
+character's own settings** rather than carrying the previous one's intensity
+across.
+
 **More settings**, at the bottom of the menu, is folded shut by default. It holds
-**rewrite mode** and **fidelity** — per-session OVERRIDES of a card's own
+**rewrite mode**, **fidelity** and **Open card directory** — per-session OVERRIDES of a card's own
 declaration that most people set once and never touch, so they do not take space
 in a menu whose job is choosing a character. When something *is* overridden, the
 collapsed row names it, so a choice you forgot about cannot hide behind the fold.
@@ -230,9 +238,9 @@ in makes the character appear without a restart**.
 ~/.dsh/persona-cards/<id>.yml
 ```
 
-Use the 🎭 menu's *Open card directory*, or the settings page, to get there.
-You can also create and edit cards entirely in **Settings → Persona**; that
-writes the same files.
+Use the 🎭 menu's *More settings → Open card directory*, or the settings page, to
+get there. You can also create and edit cards entirely in **Settings → Persona**;
+that writes the same files.
 
 On first run the bundled cards are **copied into your card directory** so the
 folder is a usable starting point. A copy shadows the bundled card of the same

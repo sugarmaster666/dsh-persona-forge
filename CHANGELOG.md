@@ -6,6 +6,34 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-10-10
+
+### Changed
+
+- **Intensity and send mode now belong to the CHARACTER, not to the session.**
+  "硬邦邦 always goes out Zealot, un-reviewed" is a property of that character
+  rather than a choice about one conversation, so both are stored per card:
+  configure it once and picking that card in another session gives you the same
+  settings.
+
+  They also moved out of the shared block above the list and under the card they
+  apply to, as a folded **"Settings for <name>"** row. Sitting above every card,
+  they read as global switches for the whole menu — and switching character
+  silently carried the previous card's intensity over. The fold's summary line
+  shows the current rung and send mode, so the state is visible without opening
+  it.
+
+  Switching character now **re-reads that card's settings**; without that the
+  previous card's values stayed on screen and were then written to the new
+  card's key.
+
+- **Picking a character no longer closes the menu.** Choosing a character and
+  configuring it are one act, and closing on pick forced a reopen to touch
+  intensity at all.
+
+- **The card directory moved into "More settings".** It is housekeeping you do
+  occasionally, not something to scroll past on the way to choosing a character.
+
 ## [0.4.1] - 2026-10-10
 
 ### Removed
@@ -521,7 +549,8 @@ First public release.
   tools, and never enters the session log. What the session records is the text
   the user actually sent.
 
-[Unreleased]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.4.1...HEAD
+[Unreleased]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.4.1...v0.5.0
 [0.4.1]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.3.5...v0.4.0
 [0.3.5]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.3.4...v0.3.5
