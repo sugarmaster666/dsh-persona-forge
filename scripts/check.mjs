@@ -874,13 +874,17 @@ check(
 )
 check(
   'client intercepts the composer send click',
-  clientSource.includes("card.addEventListener('click', onClickCapture, true)"),
+  clientSource.includes("window.addEventListener('click', onClickCapture, true)"),
   'no send interception attached',
 )
+// The listener lives on `window`, and the guard scopes each event to the
+// composer card it actually belongs to. Binding the listener to the card
+// instead meant an un-found card silently disarmed interception entirely — the
+// plugin looked dead, with no error to explain it.
 check(
   'client scopes the interception to the composer card',
-  clientSource.includes("own.closest('[data-composer-card]')"),
-  'the listener must be scoped to the composer card, not the document',
+  clientSource.includes('composerCardOf(') && clientSource.includes("closest('[data-composer-card]')"),
+  'the guard must scope each event to a composer card',
 )
 check(
   'interception reads the send labels rather than a CSS class',
@@ -892,11 +896,96 @@ check(
   clientSource.includes('lastRewrite'),
   'the send gesture must not loop rewriting its own output',
 )
-check(
-  'an in-flight rewrite swallows the send click',
-  /snapshot\.busy === true[\s\S]{0,260}preventDefault\(\)/.test(clientSource),
-  'sending during a rewrite would send the un-rewritten draft',
-)
+
+// ---------------------------------------------------------------------------
+section('send-gesture decision')
+
+// The decision that says whether one send becomes a rewrite is a PURE function,
+// so it can be driven here. It fails silently in both directions — swallow a
+// gesture that should have been sent and the message vanishes; let one through
+// that should have been rewritten and the persona quietly does nothing — and
+// neither throws. That is why it is extracted and tested rather than left
+// inline in a component no offline check can reach.
+{
+  // Boot the REAL client bundle with a window stub, exactly as the shell does,
+  // and reach the decision through the module's own test seam. This is what
+  // makes the check behavioural rather than a source-text shape match.
+  const { decideSend } = await (async () => {
+    const previousWindow = globalThis.window
+    let registered = null
+    globalThis.window = {
+      __ModuleLoader__: { load: (module) => { registered = module } },
+    }
+    try {
+      await import(`../lib/client.js?probe=${String(Date.now())}`)
+      if (registered === null) throw new Error('the client bundle did not register with the module loader')
+      const factory = registered.factory
+      const stubReact = {
+        createElement: (type, props, ...children) => ({ type, props: props ?? {}, children }),
+        useState: (initial) => [typeof initial === 'function' ? initial() : initial, () => {}],
+        useEffect: () => {},
+        useCallback: (fn) => fn,
+        useRef: () => ({ current: null }),
+        useSyncExternalStore: () => ({}),
+      }
+      const module = factory(() => stubReact)
+      return module.__internals
+    } finally {
+      globalThis.window = previousWindow
+    }
+  })()
+
+  check('the client exposes its send-gesture decision for testing', typeof decideSend === 'function')
+
+  /** A plain composer snapshot, with overrides. */
+  const snap = (over = {}) => ({
+    sessionKey: 's1', cardId: 'omnissiah', busy: false, draft: '讲个笑话', phase: 'plain', ...over,
+  })
+
+  check('a plain draft is rewritten', decideSend(snap(), undefined).action === 'rewrite')
+  check('persona off sends as typed', decideSend(snap({ cardId: 'off' }), undefined).action === 'send')
+  check('a missing card id sends as typed', decideSend(snap({ cardId: undefined }), undefined).action === 'send')
+  check('an empty draft is sent', decideSend(snap({ draft: '   ' }), undefined).action === 'send')
+  check('a non-string draft is sent', decideSend(snap({ draft: undefined }), undefined).action === 'send')
+  check('a busy input box is left alone', decideSend(snap({ phase: 'submitting' }), undefined).action === 'send')
+  check('no state at all is sent', decideSend(null, undefined).action === 'send')
+
+  // An in-flight rewrite for THIS session swallows the gesture, so the raw
+  // draft is never sent while the panel says "rewriting".
+  check('an in-flight rewrite swallows the gesture', decideSend(snap({ busy: true }), undefined).action === 'swallow')
+
+  // Sending the rewrite itself must not rewrite it again.
+  check(
+    'the rewrite output is sent as-is',
+    decideSend(snap({ draft: 'REWRITTEN' }), { result: 'REWRITTEN', original: '讲个笑话' }).action === 'send',
+  )
+
+  // THE REPORTED BUG: typing the same sentence again was sent un-rewritten,
+  // because the guard also matched `previous.original`. Restoring the original
+  // already clears this memory, so matching it bought nothing and silently
+  // disabled the persona for any repeated draft.
+  check(
+    'the same draft typed again is rewritten',
+    decideSend(snap({ draft: '讲个笑话' }), { result: 'REWRITTEN', original: '讲个笑话' }).action === 'rewrite',
+    'matching previous.original silently disabled the persona on a repeated draft',
+  )
+  check(
+    'an edited draft is rewritten',
+    decideSend(snap({ draft: '讲个笑话2' }), { result: 'REWRITTEN', original: '讲个笑话' }).action === 'rewrite',
+  )
+  // A stale entry from another draft must not block this one.
+  check(
+    'an unrelated memory does not block a new draft',
+    decideSend(snap({ draft: 'new text' }), { result: 'x', original: 'y' }).action === 'rewrite',
+  )
+  // Every reason is a non-empty string: these are the diagnostics that make a
+  // silent failure visible in a real browser.
+  check(
+    'every decision carries a reason',
+    [decideSend(snap(), undefined), decideSend(snap({ busy: true }), undefined), decideSend(null, undefined)]
+      .every((decision) => typeof decision.reason === 'string' && decision.reason !== ''),
+  )
+}
 // Enter is the primary send gesture and does not go through the button, so the
 // keydown path must be intercepted too — while leaving Shift+Enter, IME
 // composition and the modifier chords alone.
