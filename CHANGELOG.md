@@ -6,6 +6,40 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-10-10
+
+### Added
+
+- **Every card now carries TWO example sets**, and which one the model is shown
+  depends on the fidelity you chose. `examplesByIntensity` demonstrates the voice
+  alone; `examplesByIntensityStrategy` demonstrates the voice **plus the
+  behavioural framing** the rewrite may add ("do not over-plan", "do not stop at
+  the first plausible cause").
+
+  This fixes a real failure. Raising fidelity used to show the model the
+  *voice-only* examples — every one of which merely added a greeting — so it had
+  nothing to imitate and invented padding: "写一个我的世界" came back as
+  "就想要一个我的世界", a restatement rather than a framing.
+
+- **Every card now carries a `template`.** Template mode fell back to a model call
+  on every card, because none of them had one: the switch appeared on and the
+  model ran anyway. The template substitutes `{{input}}` verbatim, so the wrapper
+  supplies the mouth and the user supplies the request.
+
+- **The card generator produces both sets and a template**, and refuses a card
+  missing any of them, naming which. `DRAFT_MAX_TOKENS` goes to 8192, because a
+  complete card is now roughly twice the size of one example set.
+
+### Changed
+
+- **`fidelity` is no longer a coin flip on a card with nothing to add.** The
+  bundled cards' strategy sets demonstrate concrete framing, so the setting
+  produces visibly different output instead of a louder restatement.
+
+  A card without `examplesByIntensityStrategy` still falls back to the voice-only
+  set, so cards written before this release keep working; only the generator
+  requires the new fields.
+
 ## [0.7.3] - 2026-10-10
 
 ### Fixed
@@ -849,7 +883,8 @@ First public release.
   tools, and never enters the session log. What the session records is the text
   the user actually sent.
 
-[Unreleased]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.7.3...HEAD
+[Unreleased]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.8.0...HEAD
+[0.8.0]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.7.3...v0.8.0
 [0.7.3]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.7.2...v0.7.3
 [0.7.2]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.7.1...v0.7.2
 [0.7.1]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.7.0...v0.7.1

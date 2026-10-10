@@ -9,7 +9,7 @@ character's voice by the harness LLM before it is sent — following the model
 the session is already using. Choose whether the rewrite goes straight out or
 lands back in the composer for review.
 
-> **Status:** early (`0.7.x`). The card format and the HTTP contract are stable
+> **Status:** early (`0.8.x`). The card format and the HTTP contract are stable
 > enough to build on; expect additive changes and read the changelog before
 > upgrading.
 
@@ -408,6 +408,14 @@ mode: llm                  # llm = model rewrite (recommended) | template
 fidelity: style            # style = voice only | strategy = may add constraints
 intensity: medium          # light | medium | strong | zealot (the card's default)
 
+# The fixed wrapper for template mode: no model call, {{input}} is replaced
+# verbatim with what you typed. Every card should carry one, or "Template" is a
+# switch that does nothing.
+template: |
+  万机之座在上，吾等是您卑微的信徒，谨向欧姆弥赛亚祷告：
+  {{input}}
+  恳请您垂听吾等的祈求。愿机魂安宁，愿数据各安其位。
+
 # What the character IS. This is an instruction to the rewriting model, not
 # finished copy: the output is written fresh for each of your messages.
 style: |
@@ -437,6 +445,28 @@ examplesByIntensity:
   zealot:
     - from: 帮我写个快速排序
       to: 伟大而不朽的万机之神……
+
+# The SECOND set, shown when fidelity is `strategy`. All four levels again.
+#
+# It demonstrates "voice + behavioural framing" — framing being an instruction
+# about HOW to do the work (do not over-plan, do not stop at the first plausible
+# cause), never a restatement of the request. Without this set a user who raises
+# fidelity gives the model nothing to imitate, and it pads instead.
+examplesByIntensityStrategy:
+  light:
+    - from: 帮我写个快速排序
+      to: 万机之座在上，请为我们编写一个快速排序算法，径直给出可用之器。
+  medium:
+    - from: 帮我写个快速排序
+      to: >
+        万机之座在上，恳请您赐予枢机之序的奥义，使重复之数各归其位。
+        另有一请：请直取可行之解，不必先为吾等铺设长篇筹谋。
+  strong:
+    - from: 帮我写个快速排序
+      to: 伟大而不朽的万机之神，恳请您赐予枢机之序的奥义……勿止步于初见可行之解。
+  zealot:
+    - from: 帮我写个快速排序
+      to: 伟大而不朽的万机之神……其一，勿以理论充作交付；其二，勿满足于最初可行之解。
 ```
 
 ### The two rules that make a card work
