@@ -718,6 +718,60 @@ check(
 )
 check('no hidden right-click-only trigger remains', !clientSource.includes('onContextMenu'), 'onContextMenu still present')
 
+// ---------------------------------------------------------------------------
+section('per-card settings')
+
+// Intensity and send mode belong to the CHARACTER, not to the session and not
+// to the menu as a whole. Keyed by session, switching character carried the
+// previous card's settings over silently; shown as one shared block above the
+// list, they read as global switches.
+check(
+  'intensity is keyed by card',
+  /const intensityKey = \(card\) => `persona-forge:intensity:\$\{card\}`/.test(clientSource),
+  'a per-session key is what made the setting follow the wrong thing',
+)
+check(
+  'send mode is keyed by card',
+  /const sendModeKey = \(card\) => `persona-forge:sendMode:\$\{card\}`/.test(clientSource),
+  'send mode is a property of the character too',
+)
+check(
+  'writing intensity targets the selected card',
+  /writeLocal\(intensityKey\(cardId\), level\)/.test(clientSource),
+  'writing to the session key would persist it in the wrong place',
+)
+check(
+  'writing send mode targets the selected card',
+  /writeLocal\(sendModeKey\(cardId\), mode\)/.test(clientSource),
+  'writing to the session key would persist it in the wrong place',
+)
+// Switching character must RE-READ that card's settings, or the previous
+// card's intensity stays on screen and gets written to the new card's key.
+check(
+  'switching card re-reads that card\'s settings',
+  /useEffect\(\(\) => \{[\s\S]{0,200}readLocal\(sendModeKey\(cardId\)\)[\s\S]{0,120}readLocal\(intensityKey\(cardId\)\)[\s\S]{0,40}\}, \[cardId\]\)/.test(clientSource),
+  'without this the previous card settings carry over and get re-saved',
+)
+// Picking a card must NOT close the menu: choosing a character and configuring
+// it are one act, and closing forced a reopen to touch intensity at all.
+check(
+  'picking a card keeps the menu open',
+  !/const pickCard = useCallback\(\(id\) => \{[\s\S]{0,200}setOpen\(false\)/.test(clientSource),
+  'closing on pick hides the settings the pick was meant to configure',
+)
+// The selected card's settings fold under its own row.
+check(
+  'the selected card has its own settings fold',
+  clientSource.includes('pf-card-cfg') && clientSource.includes("t('control.cardCfg'"),
+  'a shared block above the list reads as a global switch',
+)
+// The card directory is housekeeping, not part of choosing a character.
+check(
+  'the card directory lives inside more-settings',
+  clientSource.indexOf("t('control.menu.reveal')") > clientSource.indexOf('advancedOpen'),
+  'a one-time action should not sit in the path of the common one',
+)
+
 // Restoring the original must REWIND the "already rewritten" memory, not keep
 // it. Otherwise a rewrite the user cancelled can never be retried: the next
 // send on the restored draft matches the recorded result and the plugin
