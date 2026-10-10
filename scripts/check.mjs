@@ -739,15 +739,9 @@ check(
     'an internal standard is not something the user can act on',
   )
   // The speaker direction is this plugin's number-one failure mode, and the
-  // BRIEF is where it gets decided. The old placeholder described a character
-  // and nothing else, so the generator had to guess whether the user or the
-  // assistant plays them — while its own system prompt demands the style text
-  // state the direction. An example that omits it teaches the wrong thing.
-  check(
-    'the AI draft description asks who plays whom',
-    desc.includes('AI 扮演') || desc.includes('AI plays'),
-    'a brief that does not say who plays whom leaves the direction to chance',
-  )
+  // BRIEF is where it gets decided. It is carried by the PLACEHOLDER alone:
+  // the example is the strongest teaching signal in the box, and saying it
+  // again in prose above the button was the same instruction three times over.
   const placeholder = /'settings\.ai\.briefPlaceholder': '([^']*)'/.exec(clientSource)?.[1] ?? ''
   check(
     'the brief placeholder demonstrates the speaker direction',
@@ -759,33 +753,18 @@ check(
     placeholder.includes('我是') || placeholder.includes('I am'),
     'the direction is only complete when both sides are named',
   )
+  // No separate direction paragraph. The prompt layer enforces the direction
+  // and the placeholder demonstrates it, so a third telling is noise.
   check(
-    'the direction is stated in the AI box itself',
-    clientSource.includes("t('settings.ai.direction')"),
-    'the failure is silent, so the rule belongs where the brief is written',
+    'the direction is not restated as a separate paragraph',
+    !clientSource.includes("t('settings.ai.direction')") && !/'settings\.ai\.direction'/.test(clientSource),
+    'the same instruction three times is what made the box unreadable',
   )
   check(
-    'the direction copy carries no markdown',
-    !/'settings\.ai\.direction': '[^']*\*\*/.test(clientSource),
-    'the shell renders this as plain text, so asterisks would show literally',
+    'the description does not repeat the placeholder',
+    !desc.includes('AI 扮演') && !desc.includes('你是谁'),
+    'the placeholder already shows the shape of an idea',
   )
-  // The direction copy must NOT claim the character is always the AI. It did,
-  // and that is simply false: 硬邦邦 makes the USER the character (the user is
-  // the client addressing their own team), while 欧姆弥赛亚 makes the AI the
-  // character. Both are valid; only the ambiguity is the bug.
-  {
-    const direction = /'settings\.ai\.direction': '([^']*)'/.exec(clientSource)?.[1] ?? ''
-    check(
-      'the direction copy allows both sides',
-      direction.includes('或者') || direction.includes(' or '),
-      'stating one side as the rule contradicts the other bundled card',
-    )
-    check(
-      'the direction copy does not hardcode the character as the AI',
-      !direction.includes('不是角色本身') && !direction.includes('not the character itself'),
-      'the user may be the character',
-    )
-  }
 }
 // A generated card never acquires the power to add behavioural constraints:
 // that is the user's decision, so the copy must say the fidelity is fixed.
