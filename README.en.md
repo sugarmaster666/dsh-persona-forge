@@ -9,7 +9,7 @@ character's voice by the harness LLM before it is sent — following the model
 the session is already using. Choose whether the rewrite goes straight out or
 lands back in the composer for review.
 
-> **Status:** early (`0.3.x`). The card format and the HTTP contract are stable
+> **Status:** early (`0.6.x`). The card format and the HTTP contract are stable
 > enough to build on; expect additive changes and read the changelog before
 > upgrading.
 
@@ -30,12 +30,36 @@ an explicit action.
 
 ### A word on what personas actually do
 
-Persona instructions change **style, register, length and compliance** — how
-readily the model agrees and how willing it is to push back. They do **not**
-raise the model's capability ceiling: there is no dormant potential that
-naming an identity unlocks.
+First, a fact: a persona does **not** unlock hidden capability. There is no
+dormant potential that naming an identity wakes up — the ceiling is the ceiling.
 
-Two consequences worth knowing before you use this:
+But the other half is true too: **a persona really does change how the model
+thinks.** It changes style, register, length and **compliance** — how readily
+the model agrees, how willing it is to push back, and how seriously it will
+commit to an absurd metaphor.
+
+This project was born in that second, slightly unreasonable place. The
+inspiration is a 30-second video on Bilibili:
+
+> [**“ds：好的，我现在是万机之神了（”**](https://www.bilibili.com/video/BV1Ata26pE92) — by 身居幻想乡の长乐安生
+
+The comments put it better than any spec sheet:
+
+> Another AI is you pretending to be Guan Yu — however well you act, you are not
+> Guan Yu. But when **Big Fat Fish** pretends to be Guan Yu, she genuinely
+> believes she is Guan Yu, and really does ride out and cut down Hua Xiong.
+
+"Okay, I am the Machine God now" — the model is not *humouring* the bit. It has
+**accepted the identity**. What this plugin does is make that moment reusable:
+put a character card in front of your draft, and let DeepSeek speak as that
+character.
+
+**It is tuned for DeepSeek Flash.** Flash is fast, cheap and plentiful — the
+tier you actually use all day — and letting it answer you once in the voice of
+the Machine God is the entire point. It runs on other models too, but that
+"one line and it is in character" feel was tuned against Flash.
+
+**So do not treat it as a performance switch.** Two things worth knowing:
 
 1. A persona that frames you as a supplicant and the model as an authority
    makes the model **less likely to question your plan**. For coding work that
@@ -43,8 +67,12 @@ Two consequences worth knowing before you use this:
    deference.
 2. "Longer and more ornate" is easy to mistake for "better". It usually is not.
 
-So: use it for tone and framing, keep **review mode** on, and judge the output
-by whether your requirements survived — not by how impressive it sounds.
+Use it for tone and framing, keep **review mode** on, and judge the output by
+whether your requirements survived — not by how impressive it sounds.
+
+> The two bundled cards are the two tempers of that video: **万机之神 · 欧姆弥赛亚**
+> is the solemn Mechanicum litany, and **肌肉集团 · 硬邦邦** is its antidote — a
+> machine-gun-tempo crude client who says it all in fewer words than the litany.
 
 ---
 
@@ -130,7 +158,8 @@ you want them gone.
    end of the same list, turns rewriting off — that is the state the control
    starts in. **Which character you are using is remembered per session.**
 2. The selected character grows its own **"Settings for <name>"** row right
-   under it. Open it for **intensity** and **send mode**:
+   under it. Open it for **intensity**, **send mode**, **rewrite mode** and
+   **fidelity**:
    - Intensity is a four-rung ladder: **Light · Medium · Strong · Zealot**
      (轻 · 中 · 重 · 狂热). Light adds a touch of flavour; Medium is clear but not
      dominant; Strong gives the voice real weight while keeping the request the
@@ -159,11 +188,15 @@ That fold holds four things:
 |---|---|
 | **Intensity** | Light · Medium · Strong · Zealot |
 | **Send mode** | Review first / Send directly |
-| **Rewrite mode** | Card default / Model rewrite / Template — each option says what it actually does |
-| **Fidelity** | Only when the card is `strategy` |
+| **Rewrite mode** | Card default / Model rewrite / Template |
+| **Fidelity** | Card default / Voice only / Constraints too |
 
-The folded row itself **summarises the current settings**, so you can see what a
-character is set to without opening it.
+Every row explains itself on **hover** rather than in permanent prose. The folded
+row itself **summarises the current settings**, so you can see what a character is
+set to without opening it.
+
+**All four follow the character card** — pick it in another session and you get
+the same set.
 
 **The card directory has exactly one entry point: the settings page.** It is not
 in the rewrite menu — it is occasional housekeeping, and it should not sit in the
@@ -411,24 +444,27 @@ substance. Run it after editing a card.
 `strategy` genuinely changes your request, not just its wording. Keep review
 mode on for those cards.
 
-**Fidelity is a property of the card. It can be overridden per session, but only
-ever narrowed, never widened:**
+**Fidelity is a property of the card, but you can override it per character, in
+both directions:**
 
-- **Narrowing (allowed)** — a `strategy` card can be asked to behave as
-  voice-only for one message. That only ever **takes away** its power to add
-  constraints, so it is strictly safer than the card's own default.
-- **Widening (refused)** — a `style` card cannot be told to become `strategy`.
-  Widening lets the rewrite add constraints you never typed, which is the card
-  author's decision, not something to grant with a click on the way to Send. To
-  widen, edit the card.
+| Option | Meaning |
+|---|---|
+| **Card default** | Use whatever the card declares on the settings page |
+| **Voice only** | Wording changes; your request does not |
+| **Constraints too** | The rewrite may also add the character's working style (e.g. "no long planning") |
 
-The control appears in the character's own settings fold (*Settings for <name>*),
-and **only when the card is `strategy`**. On a `style` card it is not rendered at
-all: both options would
-resolve identically there, and showing a control that cannot do anything — plus a
-paragraph explaining why the other one is refused — is worse than showing
-nothing. The server enforces the same rule, so the UI never offers a control it
-would ignore.
+**"Constraints too" genuinely changes your request**, rather than only rewording
+it — it adds things you never typed. So pair it with **Review first**.
+
+> This rule used to be one-way: a `strategy` card could be narrowed to `style`,
+> but a `style` card could never be widened. The reasoning was that a click on
+> the way to Send should not grant the power to add constraints to your request.
+>
+> That reasoning does not hold up: **the card is your own file**, and the
+> settings page has always let you set `fidelity:` directly. Refusing in the menu
+> did not remove the capability — it only made the choice **disappear from the
+> place where you actually work**. All three options are now available on every
+> card.
 
 ### `mode: template`
 

@@ -6,6 +6,69 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-10-10
+
+### Changed
+
+- **Fidelity is now free in both directions, on every card.** It used to be
+  one-way — a `strategy` card could be narrowed to `style`, but a `style` card
+  could never be widened — and the control was rendered only on `strategy` cards.
+  The reasoning was that a click on the way to Send should not grant the power to
+  add constraints to your request.
+
+  That reasoning does not hold up: **the card is the user's own file**, and the
+  settings page has always let them set `fidelity:` directly. Refusing in the
+  menu did not remove the capability, it only made the choice disappear from the
+  place where the work happens. The server rule is now symmetric, and all three
+  options — card default, voice only, constraints too — appear on every card.
+
+  The honest framing is kept: "constraints too" genuinely changes the request, so
+  the tooltip says so and points at review mode.
+
+- **The settings fold no longer explains itself in permanent prose.** Every row
+  and every option now carries its explanation as a **tooltip** on the control.
+  The fold had grown to four rows plus six lines of standing explanation, which
+  is a wall of text for a menu whose job is picking a character.
+
+- **Rewrite mode and fidelity now follow the character too**, not the session.
+  They were already displayed under the character while being stored per session,
+  which meant the setting you saw and the setting you got could disagree after
+  switching character. All four settings are now read from, and written to, the
+  card's own keys.
+
+### Added
+
+- **The check suite guards the READMEs.** The status line and the inspiration
+  link had both already rotted unnoticed, so three checks per README now pin the
+  current minor version, the video link and its author, and the named target
+  model.
+
+## [0.5.2] - 2026-10-10
+
+### Changed
+
+- **The README's "what a persona changes" section now says where this came
+  from.** The old text was a flat disclaimer — personas do not raise the
+  capability ceiling, do not expect a performance switch. That is still true and
+  still stated, but it read like a warning label on a project whose whole point
+  is delight.
+
+  It now credits the source: [**“ds：好的，我现在是万机之神了（”**](https://www.bilibili.com/video/BV1Ata26pE92)
+  by 身居幻想乡の长乐安生 — a 30-second video whose comment section describes the
+  effect better than any spec sheet ("another AI is you pretending to be Guan
+  Yu; when Big Fat Fish pretends, she really rides out and cuts down Hua
+  Xiong"). It also names **DeepSeek Flash** as the model this is tuned for,
+  which was never said anywhere.
+
+  Both READMEs also carried a stale `0.3.x` status line; they now state `0.5.x`.
+
+### Added
+
+- **The check suite now guards the READMEs.** The status line and the
+  inspiration link had both already rotted unnoticed, so three checks per README
+  now pin the current minor version, the video link and its author, and the
+  named target model.
+
 ## [0.5.1] - 2026-10-10
 
 ### Changed
@@ -577,7 +640,9 @@ First public release.
   tools, and never enters the session log. What the session records is the text
   the user actually sent.
 
-[Unreleased]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.5.1...HEAD
+[Unreleased]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.5.2...v0.6.0
+[0.5.2]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.5.1...v0.5.2
 [0.5.1]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.4.1...v0.5.0
 [0.4.1]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.4.0...v0.4.1
