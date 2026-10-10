@@ -398,7 +398,7 @@ check(
 const seededText = await readFileSeed(join(cardDir, 'omnissiah.yml'), 'utf8')
 check(
   'the seeded file is editable YAML carrying its examples',
-  seededText.includes('id: omnissiah') && seededText.includes('examples:'),
+  seededText.includes('id: omnissiah') && seededText.includes('examplesByIntensity:'),
   seededText.slice(0, 140),
 )
 // Seeding records what it wrote, so a later release can refresh an untouched
@@ -683,7 +683,7 @@ check(
   check('a behaviourally changed card IS reported', row !== undefined, JSON.stringify(rows))
   check(
     'the report names the changed fields',
-    Array.isArray(row?.changed) && row.changed.includes('style') && row.changed.includes('examples'),
+    Array.isArray(row?.changed) && row.changed.includes('style') && row.changed.includes('examplesByIntensity'),
     JSON.stringify(row?.changed),
   )
   await post('/persona-forge/cards/reset', { id: 'omnissiah' })

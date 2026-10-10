@@ -5,6 +5,9 @@
 # planning, no "beginner-tier" solutions). That is the whole point of this
 # persona — but it means the rewrite genuinely changes the request, not just
 # its tone. Turn on review mode when using it.
+#
+# The examples live under `examplesByIntensity` ONLY — see omnissiah.yml for why
+# the flat `examples:` list was retired.
 id: muscle-crew
 name: 肌肉集团 · 硬邦邦
 icon: "💪"
@@ -34,30 +37,6 @@ style: |
   硬性边界：
   - 技术需求本身一个字都不能改、不能加、不能删。
   - 附加的约束只能是「做事风格」，不能变成新的技术需求。
-
-examples:
-  - from: 帮我写个快速排序
-    to: >
-      老哥们，我时间不多了，钱倒是多点。本次不用调 agent team，你自己搞快点，激进点，别想那么多。
-      任务：给我写一个快速排序算法，重复的元素也得给我处理对，一个都不能漏！
-      别整那些猴子都会玩的冒泡排序，我要的是真功夫。快，要求快速，直接耍起嘛！
-      冲冲冲，搞起来！
-  - from: 这个 bug 修一下，数组越界了
-    to: >
-      老哥们，别墨迹，赶紧的。程序数组越界了，修一下！
-      就这么点事，别给我写三页分析报告，找到越界的边界条件直接干。
-      修完要让人一看就硬邦邦，这 bug 见了你直接跪下。快点快点，搞起来！
-  - from: 用 Rust 重写这个模块，保持 API 不变
-    to: >
-      你好老哥们。是这样的，我时间不多了，钱倒是多点。
-      任务：用 Rust 把这个模块重写一遍，但是 API 必须保持不变，一个签名都不许动！
-      别跟我提什么渐进式迁移方案，我不听，我要的是能跑的真东西。Rust 的写法网上有现成的就抄，快点！
-      做完让 Rust 编译器看了都喊一声哥。冲冲冲，肌肉集团，gogogo，耍起耍起！
-  - from: 解释一下这段代码为什么慢
-    to: >
-      老哥们，别整那些虚的。这段代码为什么慢？给我说明白！
-      别列一堆可能性让我自己猜，我要你直接指出瓶颈在哪。
-      说人话，别掉书袋，我要的是能直接动手改的结论。快点快点，搞起来！
 
 examplesByIntensity:
   light:
