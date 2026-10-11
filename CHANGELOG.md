@@ -6,6 +6,40 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.8.3] - 2026-10-11
+
+### Fixed
+
+- **The review panel is no longer cut off at the top of a conversation.** It
+  renders in the composer stack, whose seat is `flex: none` — so a tall panel does
+  not compress the composer, it pushes the whole stack **up**. With no transcript
+  above to scroll, the overflow simply left the viewport: starting a session and
+  rewriting immediately showed only the panel's title bar, and during 改写中 that
+  was all you got.
+
+  The panel is now bounded and scrolls **inside** itself, with the header pinned
+  so 关闭 stays reachable. It can be any height without ever pushing itself
+  off-screen.
+
+### Changed
+
+- **The composer menu names what the card actually declares.** "跟随卡片" was a
+  black box: the rewrite-mode and fidelity rows showed the same words whether the
+  card declared `llm` or `template`, `style` or `strategy`, so what would actually
+  run was invisible. They now read **跟随卡片（模型改写）** and
+  **跟随卡片（可加约束）**, and the folded summary line lists fidelity too — it is
+  the setting with real consequences.
+
+- **The generated example set no longer repeats the generic rule.** The card
+  generator had been told, literally, to write `方块系统、合成表、生存模式` for
+  "写一个我的世界" — which is the *same* example the rewrite rule already carries,
+  so the set it produced was guaranteed to be redundant. The prompt now separates
+  the two explicitly: generic detail is already covered (do not write it),
+  character-specific demands are what this field is for. The bundled cards were
+  rewritten the same way — 欧姆弥赛亚 asks for a record left for those who come
+  after and refuses shortcuts; 硬邦邦 refuses a proof-of-concept handed over as a
+  deliverable.
+
 ## [0.8.2] - 2026-10-10
 
 ### Fixed
@@ -939,7 +973,8 @@ First public release.
   tools, and never enters the session log. What the session records is the text
   the user actually sent.
 
-[Unreleased]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.8.2...HEAD
+[Unreleased]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.8.3...HEAD
+[0.8.3]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.8.2...v0.8.3
 [0.8.2]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.8.1...v0.8.2
 [0.8.1]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.8.0...v0.8.1
 [0.8.0]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.7.3...v0.8.0

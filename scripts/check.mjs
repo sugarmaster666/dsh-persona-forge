@@ -1315,6 +1315,38 @@ check(
   'closing the review panel would remove the confirmation step',
 )
 
+// The panel must be BOUNDED and scroll internally.
+//
+// It renders in the composer stack, whose seat is `flex: none` — so a tall panel
+// does not compress the composer, it pushes the whole stack up. At the start of a
+// conversation there is no transcript above to scroll, so the overflow simply
+// goes off-screen: reported as "the UI is cut off when rewriting from the very
+// start of a session", with only the title bar visible during 改写中.
+{
+  const panelRule = /\.pf-panel\{([^}]*)\}/.exec(clientSource)?.[1] ?? ''
+  check(
+    'the review panel has a height cap',
+    /max-height:/.test(panelRule),
+    'an uncapped panel pushes itself off-screen at the top of a conversation',
+  )
+  check(
+    'the review panel lays out as a column so the body can scroll',
+    /display:flex/.test(panelRule) && /flex-direction:column/.test(panelRule),
+    'without this the cap would squash the content instead of scrolling it',
+  )
+  const bodyRule = /\.pf-panel-body\{([^}]*)\}/.exec(clientSource)?.[1] ?? ''
+  check(
+    'the panel body scrolls',
+    /overflow-y:auto/.test(bodyRule) && /min-height:0/.test(bodyRule),
+    'min-height:0 is what lets a flex child actually shrink and scroll',
+  )
+  check(
+    'the panel header does not scroll away',
+    /\.pf-panel-head\{[^}]*flex:none/.test(clientSource),
+    '关闭 must stay reachable however tall the content is',
+  )
+}
+
 // ---------------------------------------------------------------------------
 section('send-gesture decision')
 
