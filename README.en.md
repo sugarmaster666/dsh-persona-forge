@@ -174,6 +174,8 @@ you want them gone.
 3. With a character selected, the composer's normal **Send** button — or
    **Enter** — *is* the rewrite trigger.
 
+<img src="assets/menu.png" alt="The character menu: three cards, No persona, and the selected character's expanded settings (intensity, send mode, rewrite mode, fidelity)" width="400">
+
 **Everything that configures a character lives in its own "Settings for <name>"
 fold, and follows the CHARACTER rather than the session.** "硬邦邦 always goes out
 Zealot, un-reviewed" is a fact about that character rather than a temporary
@@ -206,6 +208,8 @@ path of choosing a character.
 not a verdict: fixing a dropped identifier or a tone that is slightly off by hand
 is faster than another round trip. Once you edit it the panel says so, and
 **Send** and **Fill** both carry *your* text.
+
+<img src="assets/review-panel.png" alt="The review panel: the original draft on the left, the editable rewrite on the right, and beneath them the local check verdict, model and elapsed time, plus Send / Restore original / Rewrite" width="820">
 
 **While the panel is open, the composer's send arrow is deliberately inert.** The
 panel is the decision point; pressing send now would either push the un-reviewed
@@ -316,6 +320,8 @@ Rather than writing a card from scratch, press **New character card** — the AI
 draft box sits at the **top of the form that opens**, not as a second competing
 entry on the page. A hint line on the settings page tells you it exists, so you
 do not have to press a button to discover it.
+
+<img src="assets/settings.png" alt="The 角色扮演 settings page: New character card and the expanded AI draft's Generate draft are boxed, and the footer names the harness default model this run will use" width="420">
 
 **You** write one sentence: **who the AI plays, who you are, and how they talk.**
 
