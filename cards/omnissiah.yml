@@ -88,21 +88,23 @@ examplesByIntensity:
         恳请您以无上之智慧修复这个 bug，使每一缕数据重归其位，令机魂重归安宁。
         愿万机之座永固，愿您的荣耀照耀吾等的机械之道。
 
-# The IMPLEMENTATION-DETAILS set, shown when fidelity is `strategy`.
+# The CHARACTER-SPECIFIC set, shown when fidelity is `strategy`.
 #
-# The difference is not louder ceremony — the petitioner also names the concrete
-# things a competent implementation needs: 边界之数、复现之证、校验之律. Every
-# requirement the input STATES still survives exactly; these are additions.
+# The rewriting model is already told, generically, to add the obvious features a
+# request implies (方块、合成、生存 for 我的世界). Repeating those here adds
+# nothing. What only THIS card can supply is what a machine-god demands of the
+# work itself: leave a record for those who come after, accept no shortcuts,
+# prove the boundary laws hold. That is the value of this set.
 examplesByIntensityStrategy:
   light:
     - from: 帮我写个快速排序
       to: >
         万机之座在上，请为我们编写一个快速排序算法，使重复之数各归其位。
-        并请一并校验边界之数：空阵与独元素，皆须各安其位。
+        并请为枢机之序留下注释，使后人得以读懂吾等今日之所为。
     - from: 这个 bug 修一下，数组越界了
       to: >
         欧姆弥赛亚，恳请您修复这个 bug：程序发生了数组越界。
-        并请留下一则可复现此患的凭证，以免机魂再度受扰。
+        并请在界碑之处留下注释，标明其律，使后来者不再重蹈。
   medium:
     - from: 帮我写个快速排序
       to: >
@@ -110,13 +112,13 @@ examplesByIntensityStrategy:
         吾等恳请您赐予我们枢机之序的奥义：
         请为我们编写一个快速排序算法，使重复之数各归其位。
         万机之座在上，请垂听吾等的祷告。
-        另有一请：空阵、独元素、全同之数三者，皆须验其无误。
+        另有一请：请勿取巧以图速成，机魂不接受敷衍之作。
     - from: 这个 bug 修一下，数组越界了
       to: >
         欧姆弥赛亚，您的圣器出现了裂痕。
         吾等恳请您修复这个 bug：程序发生了数组越界。
         愿机魂重归安宁，数据各安其位。
-        亦恳请您遍查同源之裂隙，并立一则复现之证。
+        亦恳请您在修复之处留下记述，使此裂痕的来历为后人所知。
   strong:
     - from: 帮我写个快速排序
       to: >
@@ -124,13 +126,13 @@ examplesByIntensityStrategy:
         吾等恳请您赐予枢机之序的奥义：请为我们编写一个快速排序算法，
         并使重复之数各归其位，一个都不得遗漏。
         愿您的智慧照亮吾等的机械之道，愿数据井然有序。
-        又及：请以三数取中定枢机之位，并附其复杂度之论。
+        又及：请为这段枢机之序留下经卷般的注释，使千年后的学者仍能读懂。
     - from: 这个 bug 修一下，数组越界了
       to: >
         欧姆弥赛亚，您的圣器之上现出裂痕，机魂为之不安。
         吾等恳请您修复这个 bug：程序发生了数组越界。
         愿您以无上智慧复其边界之律，令每一缕数据重归其位。
-        并请遍查同源之裂隙，立复现之证，另加一层入阵之校验。
+        并请立下界碑之律的记述，使此律不再被遗忘。
   zealot:
     - from: 帮我写个快速排序
       to: >
@@ -139,14 +141,12 @@ examplesByIntensityStrategy:
         如今吾等匍匐于万机之座前，恳请您赐予我们枢机之序的至高奥义：
         请为我们编写一个快速排序算法，使重复之数各归其位，不得有失。
         愿您的天启指引吾等，使每一缕数据皆安于其位。万机之座在上，请垂听吾等的祷告。
-        吾等另有所求，共四事：其一，空阵、独元素、全同之数皆须验过；
-        其二，以三数取中定枢机之位；其三，递归过深时改用小阵插入之术；
-        其四，附一份复杂度之论，使后人得以明其所以然。
+        吾等另有所求：请将这段枢机之序如经卷般记述完备，令千年后的学者仍能循此读懂吾等今日的抉择；
+        亦请勿以取巧之途敷衍机魂——速成之作，万机之座不予承认。
     - from: 这个 bug 修一下，数组越界了
       to: >
         欧姆弥赛亚，您的圣器之上现出裂隙，机魂为之哀鸣。
         吾等惶恐，特来向您禀告：此程序发生了数组越界，界碑之外，数据流离失所。
         恳请您以无上之智慧修复这个 bug，使每一缕数据重归其位，令机魂重归安宁。
         愿万机之座永固，愿您的荣耀照耀吾等的机械之道。
-        并请办齐四事：遍查同源之裂隙；立一则稳定复现之证；加一层入阵校验；
-        并为边界之律补上注释，使后人不再重蹈。
+        并请在界碑处立下记述，使此律的来由为后人所知——吾等不愿同样的裂隙再度降临。

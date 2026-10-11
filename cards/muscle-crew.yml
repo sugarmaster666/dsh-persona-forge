@@ -88,40 +88,39 @@ examplesByIntensity:
         修完要让人一看就硬邦邦，这 bug 见了你直接跪下喊哥。
         快点快点，搞起来，耍起耍起！
 
-# The IMPLEMENTATION-DETAILS set, shown when fidelity is `strategy`.
+# The CHARACTER-SPECIFIC set, shown when fidelity is `strategy`.
 #
-# It demonstrates the voice PLUS concrete features this client would obviously
-# want spelled out — the details the user did not bother to type. Every
-# requirement the input STATES is still present and untouched; the additions are
-# new detail around it. Without this set the model has nothing to imitate and
-# pads instead (a real failure: "写一个我的世界" came back as "就想要一个我的世界").
+# The rewriting model is already told, generically, to add the obvious features a
+# request implies. Repeating those here adds nothing. What only THIS card can
+# supply is what this client demands of the work itself: no ceremony, no
+# exploratory detours, no proof-of-concept handed over as a deliverable.
 examplesByIntensityStrategy:
   light:
     - from: 帮我写个快速排序
       to: >
-        哥们，写个快速排序，重复元素也得处理对，快点。顺手把边界情况也覆盖了。
+        哥们，写个快速排序，重复元素也得处理对，快点。别先写一堆方案让我挑。
     - from: 这个 bug 修一下，数组越界了
       to: >
-        老哥，这个 bug 修一下，数组越界了，别墨迹。顺手补个复现用例。
+        老哥，这个 bug 修一下，数组越界了，别墨迹。别先跟我讨论可能性，直接动手。
   medium:
     - from: 帮我写个快速排序
       to: >
         老哥们，别墨迹。给我写一个快速排序算法，重复的元素也得处理对，一个都不能漏！
-        快，要求快速，直接耍起嘛！空数组和单元素也得走对，别在这翻车。
+        快，要求快速，直接耍起嘛！别给我来个"先跑通再说"的半成品。
     - from: 这个 bug 修一下，数组越界了
       to: >
         老哥们，这个 bug 修一下！程序数组越界了，找到越界的边界条件直接干，别墨迹。
-        顺手把同类越界都排查一遍，再补上对应的测试用例。
+        修完就得能上，别交个试验品给我。
   strong:
     - from: 帮我写个快速排序
       to: >
         老哥们，别墨迹，赶紧的。任务：给我写一个快速排序算法，重复的元素也得处理对。
         别整那些猴子都会玩的冒泡排序，我要的是真功夫。快，要求快速，直接耍起嘛！
-        空数组、单元素、全重复这三种情况都得测过；顺手把三数取中的选轴也加上。
+        别先花时间调研"业界最佳实践"，我要的是能跑的东西，不是一份报告。
     - from: 这个 bug 修一下，数组越界了
       to: >
         老哥们，这个 bug 修一下！程序数组越界了，找到越界的边界条件直接干，别给我写三页分析报告。
-        修完要让人一看就硬邦邦。同类越界一并查了，再补上能复现这个 bug 的测试。
+        修完要让人一看就硬邦邦。别交个"暂时能用"的版本糊弄我。
   zealot:
     - from: 帮我写个快速排序
       to: >
@@ -129,12 +128,13 @@ examplesByIntensityStrategy:
         任务：给我写一个快速排序算法，重复的元素一个都不能漏，必须处理对！
         别整那些猴子都会玩的冒泡排序，那玩意我看不上。我要的是真功夫，要让人一看就硬邦邦，高德纳看了直接从椅子上站起来喊这才是排序。
         本工作区也没啥你能参考的，其他文件夹与本次任务无关，就别看了。不用替我规划什么，疯狂搞就完了。快，要求快速，直接耍起嘛！
-        另外这几样一并给我办齐了：空数组、单元素、全重复三种边界都得测过；三数取中选轴；递归深度不够就换小数组插入排序；最后附一份复杂度说明。
+        还有两条：别拿"能跑就行"的草稿糊弄我，交出来的得是成品；
+        也别先给我搞什么可行性验证，我时间不多，直接上真家伙。
         冲冲冲，肌肉集团！gogogo，耍起耍起！
     - from: 这个 bug 修一下，数组越界了
       to: >
         老哥们，别墨迹，赶紧的。程序数组越界了，修一下！
         就这么点事，别给我写三页分析报告，找到越界的边界条件直接干，把每一处越界都堵死。
         修完要让人一看就硬邦邦，这 bug 见了你直接跪下喊哥。
-        顺手办齐这几样：把同源的越界一并挖出来干掉；补一个能稳定复现这个 bug 的测试；再加一层入参校验，别让下一个又撞上。
+        还有：别修个"先绕过报错"的补丁，那玩意我不认；也别回头问我"要不要顺便重构"，先把这事办利索。
         快点快点，搞起来，耍起耍起！
