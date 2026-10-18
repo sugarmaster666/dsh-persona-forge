@@ -976,30 +976,31 @@ section('review panel layout')
     'flex:none keeps the buttons at full height when the body is full',
   )
 
-  // The panel is an OVERLAY, not a flex child of the composer stack.
+  // The panel must be positioned BY THE COMPOSER, not by the viewport.
   //
-  // As a child it could only use whatever height the stack had left: on a 359px
-  // window the header and composer take 172px, leaving ~169px for the panel and
-  // ~45px for the text area, however the panel was laid out inside. It also had
-  // to survive the hero-mode seat being position:absolute, where growing upward
-  // overflowed the viewport and clipped the panel's own title bar.
+  // It once floated (position:fixed anchored to the viewport bottom) so it could
+  // use more height. That placed it against the window rather than against the
+  // composer, so in hero mode — where the composer sits mid-screen — it drifted
+  // to the bottom and covered the composer instead of following it.
   //
-  // Fixed positioning measures the panel against the viewport instead, so it can
-  // grow to nearly full height.
+  // In flow it sits right above the composer by construction. Two earlier
+  // in-flow attempts failed for separate reasons, and both are pinned here:
+  // flex:1 let the stack squash it to a ~45px text area, and a plain vh cap did
+  // not know how much of the window the header and composer already take.
   check(
-    'the panel is an overlay, not a stack child',
-    /\.pf-panel\{[^}]*position:fixed/.test(clientSource),
-    'a stack child is capped by whatever the composer leaves, which is ~45px of text on a short window',
+    'the panel is positioned by the composer, not the viewport',
+    !/\.pf-panel\{[^}]*position:fixed/.test(clientSource),
+    'a fixed panel is placed against the window and drifts away from the composer',
   )
   check(
-    'the overlay clears the composer',
-    /\.pf-panel\{[^}]*bottom:var\(--pf-panel-gap/.test(clientSource),
-    'the panel must sit above the composer, not on top of it',
+    'the panel is not squashed by the composer stack',
+    /\.pf-panel\{[^}]*flex:0 0 auto/.test(clientSource),
+    'flex:1 lets the stack compress the panel to a strip',
   )
   check(
-    'the overlay is bounded by the viewport',
-    /\.pf-panel\{[^}]*max-height:calc\(100dvh/.test(clientSource),
-    'dvh, not vh: on a short window the panel must still fit without clipping its own header',
+    'the panel is capped against the real window height',
+    /\.pf-panel\{[^}]*max-height:calc\(100dvh - var\(--pf-panel-reserve/.test(clientSource),
+    'a plain vh cap ignores the header and composer, so the panel overflows them',
   )
 
   // A permanent multi-line explanation is not free: it spends the panel's
