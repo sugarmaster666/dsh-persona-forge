@@ -908,6 +908,7 @@ section('release hygiene')
   check('package.json exposes a dry run', typeof pkg.scripts?.['release:dry'] === 'string')
 }
 
+
 // ---------------------------------------------------------------------------
 section('client bundle syntax')
 
@@ -922,6 +923,86 @@ try {
   check('client bundle compiles', false, error.message)
 }
 check('client imports no harness client package', !/require\(['"]@deepseek-ai/.test(clientSource))
+
+// ---------------------------------------------------------------------------
+section('review panel layout')
+
+// The panel is the decision point, and it has already failed twice in the same
+// way. First a tall panel pushed itself off-screen (fixed by bounding it and
+// scrolling inside). Then the scroll itself hid the decision: the action row
+// lived INSIDE the scrolling body, so a long rewrite put 发送 below the fold.
+// Bounding a container does not help if the thing you need is inside the part
+// that scrolls.
+{
+  // The settled panel is the last body (loading, error, settled).
+  const lastBodyAt = clientSource.lastIndexOf("className: 'pf-panel-body'")
+  const footAt = clientSource.indexOf("className: 'pf-panel-foot'")
+  const actionsAt = clientSource.lastIndexOf("className: 'pf-actions'")
+
+  check('the settled panel has a pinned footer', footAt !== -1, 'actions must not scroll with the content')
+  check(
+    'the actions are outside the scrolling body',
+    footAt !== -1 && lastBodyAt !== -1 && footAt > lastBodyAt,
+    'a footer that precedes the body is inside it, and 发送 scrolls out of reach',
+  )
+  check(
+    'the actions live in the footer, not the body',
+    footAt !== -1 && actionsAt > footAt,
+    'the action row must follow the footer opening',
+  )
+
+  // The original draft is already in the composer immediately below the panel,
+  // so a second column repeating it costs half the width and adds nothing.
+  check(
+    'the panel does not repeat the draft',
+    !clientSource.includes("className: 'pf-cols'") && !clientSource.includes("t('panel.original')"),
+    'the draft is in the composer; a "you wrote" column duplicates it',
+  )
+  check(
+    'no orphan copy for the removed column',
+    !clientSource.includes("'panel.original':"),
+    'a dictionary key nothing renders is dead weight in both locales',
+  )
+
+  // The rule this pins: a bounded panel whose actions scroll is still broken.
+  check(
+    'the panel body is the scrolling element',
+    /\.pf-panel-body\{[^}]*overflow-y:auto/.test(clientSource),
+    'the body scrolls; the header and footer must not',
+  )
+  check(
+    'the footer does not shrink',
+    /\.pf-panel-foot\{[^}]*flex:none/.test(clientSource),
+    'flex:none keeps the buttons at full height when the body is full',
+  )
+
+  // A permanent multi-line explanation is not free: it spends the panel's
+  // height on every rewrite, and the panel's height is what the buttons were
+  // losing to. Explanations that are read once belong in a tooltip.
+  //
+  // The bound is in DISPLAY columns, not characters: one CJK character is about
+  // two Latin ones, so counting characters would let a 74-character Chinese
+  // paragraph — three rendered lines — pass a check written for English.
+  //
+  // Two kinds of long string are legitimate and excluded: a `.hint` key (that
+  // IS the tooltip) and `panel.slow` (only rendered after 45s, when saying
+  // something long is the point).
+  const displayWidth = (text) => [...text].reduce((sum, ch) => sum + (/[\u3000-\u9fff\uff00-\uffef]/.test(ch) ? 2 : 1), 0)
+  const longCopy = [...clientSource.matchAll(/'panel\.[a-zA-Z.]+': '([^']+)'/g)].filter((match) => {
+    if (match[0].includes('.hint') || match[0].startsWith("'panel.slow'")) return false
+    return displayWidth(match[1]) > 80
+  })
+  check(
+    'no permanent multi-line explanation in the panel',
+    longCopy.length === 0,
+    longCopy.map((m) => `${m[0].slice(0, 40)}… (${displayWidth(m[1])} cols)`).join('; ') + ' — move it to a `title` hint',
+  )
+  check(
+    'the clean verdict states its boundary in a tooltip',
+    clientSource.includes("t('panel.factsOnly.hint')"),
+    'the check does not prove the rewrite is correct; that boundary must survive somewhere',
+  )
+}
 
 // ---------------------------------------------------------------------------
 section('client/host contract')
