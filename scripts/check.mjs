@@ -976,25 +976,30 @@ section('review panel layout')
     'flex:none keeps the buttons at full height when the body is full',
   )
 
-  // The panel must FIT the height the host gives it. `flex:none` makes it
-  // refuse, and a host that clips the overflow then cuts the footer — buttons
-  // and all — off the bottom. `flex:1 1 auto` with `min-height:0` lets it take
-  // exactly the space offered; the internal structure (header/footer flex:none,
-  // body scrolls) then puts every bit of the shrink on the body.
+  // The panel is an OVERLAY, not a flex child of the composer stack.
+  //
+  // As a child it could only use whatever height the stack had left: on a 359px
+  // window the header and composer take 172px, leaving ~169px for the panel and
+  // ~45px for the text area, however the panel was laid out inside. It also had
+  // to survive the hero-mode seat being position:absolute, where growing upward
+  // overflowed the viewport and clipped the panel's own title bar.
+  //
+  // Fixed positioning measures the panel against the viewport instead, so it can
+  // grow to nearly full height.
   check(
-    'the panel fits the height it is given',
-    /\.pf-panel\{[^}]*flex:1 1 auto/.test(clientSource),
-    'a panel that refuses to shrink gets clipped by its container, losing the footer',
+    'the panel is an overlay, not a stack child',
+    /\.pf-panel\{[^}]*position:fixed/.test(clientSource),
+    'a stack child is capped by whatever the composer leaves, which is ~45px of text on a short window',
   )
   check(
-    'the panel can shrink below its content',
-    /\.pf-panel\{[^}]*min-height:0/.test(clientSource),
-    'without min-height:0 a flex item will not shrink past its content',
+    'the overlay clears the composer',
+    /\.pf-panel\{[^}]*bottom:var\(--pf-panel-gap/.test(clientSource),
+    'the panel must sit above the composer, not on top of it',
   )
   check(
-    'the panel does not refuse to shrink',
-    !/\.pf-panel\{[^}]*flex:none/.test(clientSource),
-    'flex:none on the panel is the clipping bug, not a fix',
+    'the overlay is bounded by the viewport',
+    /\.pf-panel\{[^}]*max-height:calc\(100dvh/.test(clientSource),
+    'dvh, not vh: on a short window the panel must still fit without clipping its own header',
   )
 
   // A permanent multi-line explanation is not free: it spends the panel's
