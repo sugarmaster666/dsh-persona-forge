@@ -835,6 +835,80 @@ section('docs')
 }
 
 // ---------------------------------------------------------------------------
+section('release hygiene')
+
+// The release script is the only thing that may move the version number. These
+// checks pin the invariants it depends on, because every one of them has
+// already been broken once in this repository's short history:
+//
+//   - v0.8.3's tag pointed at 80b79a2 while npm shipped 4b61b4f, so
+//     `git checkout v0.8.3` and `npm i dsh-persona-forge@0.8.3` disagreed;
+//   - 0.5.2 got a CHANGELOG section with compare links to a tag that never
+//     existed, so both links 404;
+//   - 23 of the 27 tags never reached npm at all.
+{
+  const { readFile: readDoc } = await import('node:fs/promises')
+  const pkg = JSON.parse(await readDoc(join(root, 'package.json'), 'utf8'))
+  const changelog = await readDoc(join(root, 'CHANGELOG.md'), 'utf8')
+  const releaseSource = await readDoc(join(root, 'scripts', 'release.mjs'), 'utf8')
+  const agents = await readDoc(join(root, 'AGENTS.md'), 'utf8')
+  const releasing = await readDoc(join(root, 'RELEASING.md'), 'utf8')
+
+  check('the version is plain semver', /^\d+\.\d+\.\d+$/.test(pkg.version), pkg.version)
+
+  // Every published version must have its own section, or `npm i pkg@X` ships
+  // a version nobody can look up.
+  const sections = [...changelog.matchAll(/^## \[(\d+\.\d+\.\d+)\]/gm)].map((match) => match[1])
+  check('the changelog has the current version', sections.includes(pkg.version), `missing ${pkg.version}`)
+
+  // The release script must not generate release notes. Notes are judgement,
+  // and a generator that invents them produces a changelog nobody trusts.
+  check(
+    'the release script refuses an empty [Unreleased]',
+    releaseSource.includes('bodyIsEmpty') && releaseSource.includes('CHANGELOG.md 的 [Unreleased] 是空的'),
+    'an empty section must stop the release, not become an empty version',
+  )
+
+  // Tagging before the version bump is exactly how the tag drifted off the
+  // published commit. The order is the whole point of the script.
+  const bumpAt = releaseSource.indexOf('writeFileSync(pkgPath')
+  const commitAt = releaseSource.indexOf("run('git', ['commit'")
+  // `git tag --list` runs earlier, as a pre-flight duplicate check. Match the
+  // annotated-tag creation specifically, or this asserts on the wrong line.
+  const tagAt = releaseSource.indexOf("run('git', ['tag', '-a'")
+  const publishAt = releaseSource.indexOf("run('npm', ['publish']")
+  check(
+    'the release script writes the version before committing',
+    bumpAt !== -1 && commitAt !== -1 && bumpAt < commitAt,
+    'the version and the changelog must be in the released commit',
+  )
+  check(
+    'the release script tags before publishing',
+    commitAt !== -1 && tagAt !== -1 && publishAt !== -1 && commitAt < tagAt && tagAt < publishAt,
+    'commit -> tag -> publish is the only order that keeps them on one tree',
+  )
+  check(
+    'the release script verifies gitHead after publishing',
+    releaseSource.includes("'gitHead'"),
+    'a published package whose gitHead is not HEAD is the v0.8.3 bug',
+  )
+
+  // Two entry points must agree on the rules, or an agent reading one of them
+  // follows a procedure the other contradicts.
+  check('AGENTS.md points at the release rules', agents.includes('RELEASING.md'))
+  check('the release rules exist', releasing.includes('npm publish'))
+  check(
+    'the release rules name the one-commit invariant',
+    /同一个 commit|same commit/.test(releasing),
+    'this is the rule whose violation produced v0.8.3',
+  )
+
+  // The scripts must be reachable without reading any source.
+  check('package.json exposes the release command', typeof pkg.scripts?.release === 'string')
+  check('package.json exposes a dry run', typeof pkg.scripts?.['release:dry'] === 'string')
+}
+
+// ---------------------------------------------------------------------------
 section('client bundle syntax')
 
 const clientSource = await readFile(join(root, 'lib', 'client.js'), 'utf8')

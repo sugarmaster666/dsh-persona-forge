@@ -439,6 +439,21 @@ npm run check                 # 两者都跑
 
 `host-check.mjs` 在 stub Cordis 上下文上挂载真实插件入口，用真实 socket 驱动真实 HTTP 路由，`llm` 服务为桩实现。覆盖路由注册、会话模型解析、模板模式、回环防护、保存/删除往返 —— 这些是单元自检够不到的。它把 `DSH_HOME` 指向临时目录，**不会碰你真实的角色卡**。
 
+### 发布
+
+```
+npm run release:dry     # 先看一眼会改什么，不写文件、不发布
+npm run release         # 改版本号、写 CHANGELOG、提交、打 tag、发布、推送
+```
+
+发版规则见 [RELEASING.md](RELEASING.md)。要点：**一次发布 = 一个用户能感知到的
+变化**，攒够了再发；版本号、CHANGELOG、tag 和 npm 发布必须在同一个 commit 上，
+否则 `git checkout vX` 和 `npm i pkg@X` 会拿到不同的东西。
+
+`release.mjs` 会依次拒绝：工作区不干净、不在 `main` 上、自检不过、只有文档改动、
+`[Unreleased]` 是空的、tag 或 npm 版本号已存在、`package.json` 和最近的 tag 对不上。
+发布说明由你写进 `[Unreleased]`，脚本只负责把它提成正式版本。
+
 ### 角色卡 YAML
 
 插件自带 YAML 读取器（`lib/yaml.js`），不依赖 YAML 库。已发布的插件会声明依赖，但本地 `link:` 的插件**不会**被安装依赖 —— 所以引用库只有在某个无关包恰好提升（hoist）了它时才能工作。
@@ -458,6 +473,9 @@ npm run check                 # 两者都跑
 | `lib/loopback.js` | 回环信任防护 |
 | `lib/client.js` | 浏览器侧：输入框控件、审查面板、设置页 |
 | `cards/` | 内置角色卡（只读；同 id 的用户卡会遮蔽它） |
+| `scripts/check.mjs` | 离线单元自检 |
+| `scripts/host-check.mjs` | 宿主集成自检 |
+| `scripts/release.mjs` | 发布流程；规则见 `RELEASING.md` |
 
 ## 许可证
 
