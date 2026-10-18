@@ -6,6 +6,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.8.4] - 2026-10-19
+
 ### Fixed
 
 - **面板跑到屏幕底部、盖住了输入框。** 上一版为了腾出高度，把面板改成
@@ -163,7 +165,6 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   pass unreported, and the panel's "新增" line stays empty even when the rewrite
   added them. The added detail is still visible in the editable result column,
   which is where a reviewer would catch it.
-
 
 ## [0.8.0] - 2026-10-10
 
@@ -1042,7 +1043,8 @@ First public release.
   tools, and never enters the session log. What the session records is the text
   the user actually sent.
 
-[Unreleased]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.8.3...HEAD
+[Unreleased]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.8.4...HEAD
+[0.8.4]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.8.3...v0.8.4
 [0.8.3]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.8.2...v0.8.3
 [0.8.2]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.8.1...v0.8.2
 [0.8.1]: https://github.com/sugarmaster666/dsh-persona-forge/compare/v0.8.0...v0.8.1
