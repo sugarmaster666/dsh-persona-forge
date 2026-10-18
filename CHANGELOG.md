@@ -67,8 +67,31 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   - 面板不得重复显示草稿（把左栏加回来，2 项变红）
   - 常驻文案按**显示宽度**限长（一个中文字约等于两个西文字符，按字符数算会
     放过一条 74 字符、实际渲染三行的中文说明——这个 bug 是写检查时才发现的）
-  - 面板必须是**浮层**：`position:fixed`、锚在输入框上方、按 `100dvh` 限高
-    （换回 flex 子项，3 项变红）
+  - 面板必须**由输入框定位、而不是由视口定位**：不得用 `position:fixed`
+    （固定定位是相对窗口摆放的，新会话里会把面板甩到屏幕底部、压住输入框）
+
+### Added
+
+- **发布变成一条命令。** `npm run release` 依次做：改版本号、把 `[Unreleased]`
+  提成带日期的版本节、重写底部链接、把版本号和 CHANGELOG 放进**同一个 commit**、
+  打 annotated tag、发布、推送，最后核对 npm 记录的 `gitHead` 等于 `HEAD`。
+
+  它会拒绝八种不该发布的状态：工作区不干净、不在 `main` 上、origin 不是本包
+  仓库（副本会继承真实 origin，在副本里发布会直接推到线上）、自检不过、只有
+  文档改动、`[Unreleased]` 是空的、tag 或 npm 版本号已存在、`package.json`
+  和最近的 tag 对不上。
+
+  发布中途失败（比如打好了 tag 但 publish 失败）会被认出来，重跑只补做剩下的步骤。
+
+- **`AGENTS.md` 和 `RELEASING.md`。** 前者是给下一个接手的人（或 AI）的入口：
+  三条硬约束、改完必须跑什么、提交信息怎么前缀；后者是发版规则：什么时候该发、
+  版本号怎么定、七步流程，以及历史欠账清单。
+
+### Fixed
+
+- **发布指向正确的 registry。** 本机 `.npmrc` 为了速度指向 npmmirror 镜像，
+  而镜像不接受发布。发布目标现在是项目属性而不是机器属性：`npm publish` 和
+  每一次版本探测都显式带上 `--registry https://registry.npmjs.org`。
 
 ### Note
 
