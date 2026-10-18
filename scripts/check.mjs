@@ -976,6 +976,27 @@ section('review panel layout')
     'flex:none keeps the buttons at full height when the body is full',
   )
 
+  // The panel must FIT the height the host gives it. `flex:none` makes it
+  // refuse, and a host that clips the overflow then cuts the footer — buttons
+  // and all — off the bottom. `flex:1 1 auto` with `min-height:0` lets it take
+  // exactly the space offered; the internal structure (header/footer flex:none,
+  // body scrolls) then puts every bit of the shrink on the body.
+  check(
+    'the panel fits the height it is given',
+    /\.pf-panel\{[^}]*flex:1 1 auto/.test(clientSource),
+    'a panel that refuses to shrink gets clipped by its container, losing the footer',
+  )
+  check(
+    'the panel can shrink below its content',
+    /\.pf-panel\{[^}]*min-height:0/.test(clientSource),
+    'without min-height:0 a flex item will not shrink past its content',
+  )
+  check(
+    'the panel does not refuse to shrink',
+    !/\.pf-panel\{[^}]*flex:none/.test(clientSource),
+    'flex:none on the panel is the clipping bug, not a fix',
+  )
+
   // A permanent multi-line explanation is not free: it spends the panel's
   // height on every rewrite, and the panel's height is what the buttons were
   // losing to. Explanations that are read once belong in a tooltip.
