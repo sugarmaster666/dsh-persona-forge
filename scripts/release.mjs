@@ -32,6 +32,15 @@ const here = dirname(fileURLToPath(import.meta.url))
 const root = join(here, '..')
 
 const REPO_URL = 'https://github.com/sugarmaster666/dsh-persona-forge'
+
+/**
+ * Where the package is actually published.
+ *
+ * NOT read from .npmrc on purpose: this machine points its registry at a
+ * mirror for speed, and a mirror rejects publishes. The publish target is a
+ * property of the project, not of whoever happens to run the command.
+ */
+const PUBLISH_REGISTRY = 'https://registry.npmjs.org'
 const BUMPS = ['patch', 'minor', 'major']
 
 /**
@@ -95,7 +104,7 @@ function ok(message) {
  */
 function isPublished(version) {
   try {
-    const found = run('npm', ['view', `dsh-persona-forge@${version}`, 'version'])
+    const found = run('npm', ['view', '--registry', PUBLISH_REGISTRY, `dsh-persona-forge@${version}`, 'version'])
     return found !== ''
   } catch (error) {
     const message = error.message
@@ -457,7 +466,10 @@ async function main() {
 async function finishRelease(version, tag, head) {
   step('发布到 npm')
   try {
-    run('npm', ['publish'], { inherit: true })
+    // Explicit registry: the local .npmrc points at a mirror, and a mirror does
+    // not accept a publish. Publishing to the wrong host is not a failure that
+    // can be undone, so this does not rely on whatever the machine is set to.
+    run('npm', ['publish', '--registry', PUBLISH_REGISTRY], { inherit: true })
   } catch (error) {
     refuse(
       `npm publish 失败，${tag} 的 tag 已经打好，但没有任何东西被发布。`,
@@ -505,8 +517,8 @@ async function finishRelease(version, tag, head) {
   ok('代码和 tag 已推送')
 
   step('核对')
-  const verifiedVersion = run('npm', ['view', 'dsh-persona-forge', 'version'])
-  const verifiedHead = run('npm', ['view', 'dsh-persona-forge', 'gitHead'])
+  const verifiedVersion = run('npm', ['view', '--registry', PUBLISH_REGISTRY, 'dsh-persona-forge', 'version'])
+  const verifiedHead = run('npm', ['view', '--registry', PUBLISH_REGISTRY, 'dsh-persona-forge', 'gitHead'])
   if (verifiedVersion !== version) {
     refuse(
       `npm 上的 latest 是 ${verifiedVersion}，不是刚发布的 ${version}。`,

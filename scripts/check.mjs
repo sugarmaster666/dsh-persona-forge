@@ -876,7 +876,7 @@ section('release hygiene')
   // `git tag --list` runs earlier, as a pre-flight duplicate check. Match the
   // annotated-tag creation specifically, or this asserts on the wrong line.
   const tagAt = releaseSource.indexOf("run('git', ['tag', '-a'")
-  const publishAt = releaseSource.indexOf("run('npm', ['publish']")
+  const publishAt = releaseSource.indexOf("run('npm', ['publish'")
   check(
     'the release script writes the version before committing',
     bumpAt !== -1 && commitAt !== -1 && bumpAt < commitAt,
@@ -904,6 +904,20 @@ section('release hygiene')
   )
 
   // The scripts must be reachable without reading any source.
+  // Publishing must target the real registry, not whatever .npmrc names.
+  // This machine points its registry at a mirror for speed, and a mirror
+  // rejects publishes — a failure at the least recoverable step.
+  check(
+    'the release script pins the publish registry',
+    releaseSource.includes("const PUBLISH_REGISTRY = 'https://registry.npmjs.org'"),
+    'a mirror in .npmrc would otherwise be the publish target',
+  )
+  check(
+    'npm publish passes the pinned registry',
+    releaseSource.includes("run('npm', ['publish', '--registry', PUBLISH_REGISTRY]"),
+    'the flag must reach the publish call, not just be declared',
+  )
+
   check('package.json exposes the release command', typeof pkg.scripts?.release === 'string')
   check('package.json exposes a dry run', typeof pkg.scripts?.['release:dry'] === 'string')
 }
